@@ -1,0 +1,90 @@
+class Translations:
+    def __init__(self):
+        self.current_language = "en"
+        self.translations = {
+            "en": {
+                "app_title": "AI Calendar",
+                "login": "Login",
+                "logout": "Logout",
+                "settings": "Settings",
+                "language": "Language",
+                "save": "Save",
+                "cancel": "Cancel",
+                "create": "Create",
+                "month_view": "Month View",
+                "week_view": "Week View",
+                "day_view": "Day View",
+                "my_calendars": "My calendars",
+                "events": "Events",
+                "tasks": "Tasks",
+                "birthdays": "Birthdays",
+                "holidays": "Holidays",
+                "account": "Account",
+                "name": "Name",
+                "email": "Email",
+                "current_password": "Current Password",
+                "new_password": "New Password",
+                "confirm_password": "Confirm New Password",
+                "account_info": "Account Information",
+                "save_name": "Save Name",
+                "security": "Security",
+                "change_password": "Change Password",
+                "actions": "Actions",
+                "delete_account": "Delete Account",
+                "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                "weekdays_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                "no_events": "No events today",
+                "event_details": "Event Details",
+                "description": "Description",
+                "time": "Time",
+                "close": "Close",
+                "calendar": "Calendar",
+            },
+            "ru": {
+                "app_title": "AI Календарь",
+                "login": "Войти",
+                "logout": "Выйти",
+                "settings": "Настройки",
+                "language": "Язык",
+                "save": "Сохранить",
+                "cancel": "Отмена",
+                "create": "Создать",
+                "month_view": "Месяц",
+                "week_view": "Неделя",
+                "day_view": "День",
+                "my_calendars": "Мои календари",
+                "events": "События",
+                "tasks": "Задачи",
+                "birthdays": "Дни рождения",
+                "holidays": "Праздники",
+                "account": "Аккаунт",
+                "name": "Имя",
+                "email": "Email",
+                "current_password": "Текущий пароль",
+                "new_password": "Новый пароль",
+                "confirm_password": "Подтвердите пароль",
+                "account_info": "Информация об аккаунте",
+                "save_name": "Сохранить имя",
+                "security": "Безопасность",
+                "change_password": "Сменить пароль",
+                "actions": "Действия",
+                "delete_account": "Удалить аккаунт",
+                "months": ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"],
+                "weekdays_short": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+                "no_events": "Нет событий сегодня",
+                "event_details": "Детали события",
+                "description": "Описание",
+                "time": "Время",
+                "close": "Закрыть",
+                "calendar": "Календарь",
+            }
+        }
+
+    def set_language(self, language_code):
+        if language_code in self.translations:
+            self.current_language = language_code
+
+    def get(self, key):
+        return self.translations.get(self.current_language, {}).get(key, key)
+
+translations = Translations()

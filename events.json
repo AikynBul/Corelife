@@ -1,0 +1,12 @@
+[
+    {
+        "id": "1763971226.587556",
+        "title": "meeting",
+        "start": "2025-11-25 14:00",
+        "end": "2025-11-25 15:00",
+        "description": "meeting witk COR team",
+        "type": "event",
+        "recurrence": null,
+        "priority": "Medium"
+    }
+]
