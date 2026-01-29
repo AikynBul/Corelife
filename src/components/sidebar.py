@@ -5,19 +5,30 @@ from components.event_dialog import EventDialog
 from utils.translations import translations
 
 class Sidebar(ft.Container):
-    def __init__(self, on_view_change=None, on_filter_change=None, on_refresh=None):
+    def __init__(self, on_view_change=None, on_filter_change=None, on_refresh=None, on_date_click=None):
         super().__init__()
         self.on_view_change = on_view_change
         self.on_filter_change = on_filter_change
         self.on_refresh = on_refresh
+        self.on_date_click = on_date_click  # ✅ НОВЫЙ callback для клика на дату
         self.width = 250
         self.padding = 10
         self.current_date = datetime.date.today()
+        self.current_calendar_view = "Month"  # ✅ Отслеживаем текущий вид
+        
+        # ✅ Создаём expansion tile для календаря
+        self.calendar_expansion = self.build_calendar_expansion()
+        
         self.content = ft.Column(
             controls=[
                 self.build_create_button(),
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-                self.build_view_switcher(),
+                self.calendar_expansion,  # ✅ ИЗМЕНЕНО: вместо build_view_switcher()
+                ft.TextButton(
+                    translations.get("diet_view"), 
+                    on_click=lambda e: self.on_view_change("Diet") if self.on_view_change else None, 
+                    icon=ft.Icons.RESTAURANT_MENU
+                ),
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.build_mini_calendar(),
                 ft.Divider(),
@@ -25,14 +36,66 @@ class Sidebar(ft.Container):
             ]
         )
 
-    def build_view_switcher(self):
-        return ft.Column(
-            [
-                ft.TextButton(translations.get("month_view"), on_click=lambda e: self.on_view_change("Month") if self.on_view_change else None, icon=ft.Icons.CALENDAR_MONTH),
-                ft.TextButton(translations.get("week_view"), on_click=lambda e: self.on_view_change("Week") if self.on_view_change else None, icon=ft.Icons.VIEW_WEEK),
-                ft.TextButton(translations.get("day_view"), on_click=lambda e: self.on_view_change("Day") if self.on_view_change else None, icon=ft.Icons.TODAY),
-            ]
+    def build_calendar_expansion(self):
+        """✅ НОВЫЙ МЕТОД: Создаёт выпадающее меню для видов календаря"""
+        # Текст для отображения текущего выбранного вида
+        self.calendar_view_text = ft.Text(
+            self.get_view_label(self.current_calendar_view),
+            size=14,
+            weight=ft.FontWeight.W_500
         )
+        
+        # Контейнер с иконкой и текстом
+        self.expansion_tile = ft.ExpansionTile(
+            title=ft.Row([
+                ft.Icon(ft.Icons.CALENDAR_MONTH, size=20),
+                self.calendar_view_text,
+            ], spacing=10),
+            subtitle=None,
+            initially_expanded=False,
+            controls=[
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.CALENDAR_MONTH, size=20),
+                    title=ft.Text(translations.get("month_view")),
+                    on_click=lambda e: self.switch_calendar_view("Month")
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.VIEW_WEEK, size=20),
+                    title=ft.Text(translations.get("week_view")),
+                    on_click=lambda e: self.switch_calendar_view("Week")
+                ),
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.TODAY, size=20),
+                    title=ft.Text(translations.get("day_view")),
+                    on_click=lambda e: self.switch_calendar_view("Day")
+                ),
+            ],
+        )
+        
+        return self.expansion_tile
+    
+    def get_view_label(self, view_name):
+        """Возвращает локализованное название вида"""
+        labels = {
+            "Month": translations.get("month_view"),
+            "Week": translations.get("week_view"),
+            "Day": translations.get("day_view"),
+        }
+        return labels.get(view_name, view_name)
+    
+    def switch_calendar_view(self, view_name):
+        """✅ НОВЫЙ МЕТОД: Переключает вид календаря"""
+        self.current_calendar_view = view_name
+        self.calendar_view_text.value = self.get_view_label(view_name)
+        self.calendar_view_text.update()
+        
+        # Закрываем expansion tile
+        self.expansion_tile.initially_expanded = False
+        self.expansion_tile.update()
+        
+        # Вызываем callback для переключения вида
+        if self.on_view_change:
+            self.on_view_change(view_name)
 
     def build_create_button(self):
         return ft.Container(
@@ -66,7 +129,7 @@ class Sidebar(ft.Container):
             e.page.update()
 
     def build_mini_calendar(self):
-        # Simple static mini calendar for now
+        """✅ ИЗМЕНЕНО: Мини-календарь теперь кликабельный"""
         today = datetime.date.today()
         cal = calendar.monthcalendar(today.year, today.month)
         
@@ -84,6 +147,10 @@ class Sidebar(ft.Container):
                     week_row.append(ft.Container(width=20))
                 else:
                     is_today = day == self.current_date.day and self.current_date.month == datetime.date.today().month and self.current_date.year == datetime.date.today().year
+                    
+                    # ✅ ИЗМЕНЕНО: Добавлен обработчик клика
+                    selected_date = datetime.date(today.year, today.month, day)
+                    
                     week_row.append(
                         ft.Container(
                             content=ft.Text(str(day), size=10, color=ft.Colors.ON_PRIMARY if is_today else None),
@@ -92,11 +159,26 @@ class Sidebar(ft.Container):
                             bgcolor=ft.Colors.PRIMARY if is_today else None,
                             border_radius=10,
                             alignment=ft.alignment.center,
+                            on_click=lambda e, date=selected_date: self.handle_date_click(date),  # ✅ ДОБАВЛЕНО
+                            ink=True  # ✅ ДОБАВЛЕНО: эффект клика
                         )
                     )
             rows.append(ft.Row(week_row, alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
 
         return ft.Column(rows, spacing=5)
+    
+    def handle_date_click(self, date):
+        """✅ НОВЫЙ МЕТОД: Обрабатывает клик на дату в мини-календаре"""
+        print(f"Date clicked: {date}")
+        
+        # Переключаем на дневной вид
+        self.current_calendar_view = "Day"
+        self.calendar_view_text.value = self.get_view_label("Day")
+        self.calendar_view_text.update()
+        
+        # Вызываем callback с выбранной датой
+        if self.on_date_click:
+            self.on_date_click(date)
 
     def build_my_calendars(self):
         self.events_checkbox = ft.Checkbox(label=translations.get("events"), value=True, on_change=self.trigger_filter)

@@ -13,6 +13,28 @@ class EventStore:
         self.user_id = None # Set when user logs in
         self._connect()
 
+    CATEGORIES = {
+        "Study": "📚",
+        "Exercise": "💪",
+        "Sleep": "😴",
+        "Personal": "👤",
+        "Work": "💼",
+        "Social": "👥",
+        "Health": "🏥",
+        "Food": "🍽️"
+    }
+
+    OPTIMAL_TIMES = {
+        "Study": {"start": 17, "end": 21},      # Вечер 17:00-21:00
+        "Exercise": {"start": 14, "end": 18},   # После обеда 14:00-18:00
+        "Sleep": {"start": 22, "end": 7},       # Ночь 22:00-07:00
+        "Food": {"start": 12, "end": 14},       # Обед 12:00-14:00
+        "Work": {"start": 9, "end": 17},        # Рабочий день 9:00-17:00
+        "Social": {"start": 18, "end": 22},     # Вечер 18:00-22:00
+        "Personal": {"start": 8, "end": 22},    # Гибкое время
+        "Health": {"start": 9, "end": 18}       # Днём 9:00-18:00
+    }
+
     def _connect(self):
         mongo_uri = os.getenv("MONGO_URI")
         if mongo_uri:
@@ -29,7 +51,8 @@ class EventStore:
     def set_user(self, user_id):
         self.user_id = user_id
 
-    def add_event(self, title, start_date, end_date, description, event_type="event", recurrence=None, priority="Medium", completed=False):
+    def add_event(self, title, start_date, end_date, description, event_type="event",
+                  recurrence=None, priority="Medium", completed=False, category="Personal"):
         if self.collection is None or not self.user_id:
             print("Database not connected or user not set")
             return None
@@ -43,6 +66,7 @@ class EventStore:
             "type": event_type,
             "recurrence": recurrence,
             "priority": priority,
+            "category": category,
             "completed": completed,
             "created_at": datetime.now()
         }
@@ -160,6 +184,182 @@ class EventStore:
                     results.append(instance)
                     
         return results
+
+    def get_events_for_date(self, date):
+        """Получить все события для конкретной даты (YYYY-MM-DD)"""
+        if self.collection is None or not self.user_id:
+            return []
+        
+        from datetime import datetime
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            return []
+        
+        events = self.get_events_for_month(target_date.year, target_date.month)
+        
+        # Фильтруем только события на эту дату
+        result = []
+        for event in events:
+            try:
+                event_date_str = event["start"].split(" ")[0]
+                event_date = datetime.strptime(event_date_str, "%Y-%m-%d").date()
+                if event_date == target_date:
+                    result.append(event)
+            except (ValueError, IndexError):
+                continue
+        
+        return result
+    
+    def get_free_slots(self, date, duration_hours=1, category="Personal"):
+        """
+        Найти свободные слоты в указанную дату
+        
+        Args:
+            date: дата в формате YYYY-MM-DD
+            duration_hours: продолжительность в часах
+            category: категория для определения оптимального времени
+        
+        Returns:
+            list of dicts: [{"start": "HH:MM", "end": "HH:MM", "score": int}, ...]
+        """
+        from datetime import datetime, timedelta
+        
+        events = self.get_events_for_date(date)
+        
+        # Получаем оптимальное время для категории
+        optimal = self.OPTIMAL_TIMES.get(category, {"start": 9, "end": 21})
+        optimal_start = optimal["start"]
+        optimal_end = optimal["end"]
+        
+        # Создаем список занятых часов
+        busy_slots = []
+        for event in events:
+            try:
+                time_part = event["start"].split(" ")[1] if " " in event["start"] else "09:00"
+                hour = int(time_part.split(":")[0])
+                busy_slots.append(hour)
+            except (ValueError, IndexError):
+                continue
+        
+        # Находим свободные слоты в оптимальное время
+        free_slots = []
+        
+        # Для сна особая логика (ночное время)
+        if category == "Sleep":
+            for hour in range(22, 24):
+                if hour not in busy_slots:
+                    score = 100
+                    free_slots.append({
+                        "start": f"{hour:02d}:00",
+                        "end": f"{(hour + duration_hours) % 24:02d}:00",
+                        "score": score
+                    })
+        else:
+            # Обычная логика для остальных категорий
+            for hour in range(optimal_start, optimal_end):
+                if hour not in busy_slots and hour + duration_hours <= optimal_end:
+                    mid_time = (optimal_start + optimal_end) / 2
+                    distance_from_optimal = abs(hour - mid_time)
+                    score = 100 - int(distance_from_optimal * 10)
+                    
+                    free_slots.append({
+                        "start": f"{hour:02d}:00",
+                        "end": f"{hour + duration_hours:02d}:00",
+                        "score": max(score, 1)
+                    })
+        
+        # Если нет слотов в оптимальное время, ищем в любое время (8:00 - 22:00)
+        if not free_slots:
+            for hour in range(8, 22):
+                if hour not in busy_slots:
+                    free_slots.append({
+                        "start": f"{hour:02d}:00",
+                        "end": f"{hour + duration_hours:02d}:00",
+                        "score": 30
+                    })
+        
+        free_slots.sort(key=lambda x: x["score"], reverse=True)
+        return free_slots
+
+    def save_diet_preferences(self, user_id, preferences):
+        """Сохраняет предпочтения пользователя по диете"""
+        try:
+            # ✅ ИСПРАВЛЕНО: Конвертируем все списки в строки для совместимости с MongoDB
+            # MongoDB может хранить списки, но иногда возникают проблемы с хешированием
+            
+            # Создаём копию чтобы не изменять оригинальный словарь
+            safe_preferences = {}
+            
+            for key, value in preferences.items():
+                # Если значение - список, сохраняем как есть (MongoDB поддерживает массивы)
+                # Но убеждаемся что это простые типы данных
+                if isinstance(value, list):
+                    # Конвертируем все элементы списка в строки
+                    safe_preferences[key] = [str(item) for item in value]
+                else:
+                    safe_preferences[key] = str(value)
+            
+            self.db.users.update_one(
+                {"_id": user_id},
+                {"$set": {"diet_preferences": safe_preferences}},
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            print(f"Error saving diet preferences: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def get_diet_preferences(self, user_id):
+        """Получает предпочтения пользователя по диете"""
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            if user and "diet_preferences" in user:
+                return user["diet_preferences"]
+            return None
+        except Exception as e:
+            print(f"Error getting diet preferences: {e}")
+            return None
+
+    def save_user_goals(self, user_id, goals):
+        """Сохраняет цели пользователя (time_management, diet)"""
+        try:
+            self.db.users.update_one(
+                {"_id": user_id},
+                {"$set": {
+                    "goals": goals,
+                    "onboarding_completed": True
+                }},
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            print(f"Error saving user goals: {e}")
+            return False
+
+    def get_user_goals(self, user_id):
+        """Получает цели пользователя"""
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            if user and "goals" in user:
+                return user["goals"]
+            return []
+        except Exception as e:
+            print(f"Error getting user goals: {e}")
+            return []
+
+    def has_completed_onboarding(self, user_id):
+        """Проверяет прошёл ли пользователь онбординг"""
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            if user:
+                return user.get("onboarding_completed", False)
+            return False
+        except Exception as e:
+            print(f"Error checking onboarding: {e}")
+            return False
 
 # Global instance
 store = EventStore()

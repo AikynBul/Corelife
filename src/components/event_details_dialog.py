@@ -20,11 +20,27 @@ class EventDetailsDialog(ft.AlertDialog):
                 tight=True
             ),
             actions=[
+                ft.TextButton("Edit", on_click=self.edit_event, style=ft.ButtonStyle(color=ft.Colors.BLUE)),
                 ft.TextButton("Delete", on_click=self.delete_event, style=ft.ButtonStyle(color=ft.Colors.RED)),
                 ft.TextButton("Close", on_click=self.close_dialog),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
+
+    def edit_event(self, e):
+        from components.event_dialog import EventDialog
+        
+        # Закрываем текущий диалог
+        self.page_ref.close(self)
+        
+        # Открываем диалог редактирования с предзаполненными данными
+        edit_dialog = EventDialog(
+            self.page_ref,
+            on_dismiss=self.on_dismiss_callback,
+            event=self.event  # Передаём существующее событие
+        )
+        self.page_ref.open(edit_dialog)
+        self.page_ref.update()
 
     def delete_event(self, e):
         store.delete_event(self.event["id"])

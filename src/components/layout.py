@@ -1,10 +1,10 @@
 import flet as ft
-import flet as ft
 from components.sidebar import Sidebar
 from components.calendar import MonthView
 from components.day_view import DayView
 from components.week_view import WeekView
 from components.account_view import AccountView
+from components.diet_view import DietView  # ✅ НОВЫЙ ИМПОРТ
 
 class AppLayout(ft.Row):
     def __init__(self, page: ft.Page, user_info: dict, on_logout):
@@ -33,6 +33,7 @@ class AppLayout(ft.Row):
         self.day_view = DayView()
         self.week_view = WeekView()
         self.account_view = AccountView(self.user_info, self.on_logout)
+        self.diet_view = DietView(self.page, self.user_info)  # ✅ НОВЫЙ VIEW
 
         # Main Content Area
         self.content_area = ft.Container(
@@ -48,6 +49,7 @@ class AppLayout(ft.Row):
         ]
 
     def set_view(self, view_name):
+        """Переключает вид в зависимости от выбора в сайдбаре"""
         if view_name == "Month":
             self.content_area.content = self.month_view
         elif view_name == "Day":
@@ -59,9 +61,15 @@ class AppLayout(ft.Row):
         elif view_name == "Account":
             if self.account_view:
                 self.content_area.content = self.account_view
+        elif view_name == "Diet":  # ✅ НОВАЯ СТРАНИЦА
+            # Пересоздаём diet_view чтобы обновить данные
+            self.diet_view = DietView(self.page, self.user_info)
+            self.content_area.content = self.diet_view
+        
         self.content_area.update()
 
     def go_to_day(self, date):
+        """Переход к дневному виду с выбранной датой"""
         self.day_view.current_date = date
         self.set_view("Day")
         # Update sidebar selection if possible, or just let it be
@@ -69,10 +77,12 @@ class AppLayout(ft.Row):
         self.sidebar.update()
 
     def update_filters(self, filters):
+        """Обновляет фильтры событий/задач"""
         self.filters = filters
         self.refresh_active_view()
 
     def refresh_active_view(self):
+        """Обновляет текущий активный вид"""
         # Re-render the current view
         if self.content_area.content == self.month_view:
             self.month_view.update_filter(self.filters) # This triggers render
@@ -84,10 +94,16 @@ class AppLayout(ft.Row):
             self.day_view.filters = self.filters
             self.day_view.render_view()
             self.day_view.update()
-        self.content_area.update()
+        elif self.content_area.content == self.diet_view:
+            # Пересоздаём diet_view для обновления данных
+            self.diet_view = DietView(self.page, self.user_info)
+            self.content_area.content = self.diet_view
+            self.content_area.update()
+        else:
+            self.content_area.update()
 
     def toggle_sidebar(self):
-        # self.sidebar.visible = not self.sidebar.visible
+        """Скрывает/показывает сайдбар"""
         if self.sidebar.width == 0:
             self.sidebar.width = 250
         else:

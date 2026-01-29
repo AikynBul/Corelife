@@ -1,10 +1,11 @@
 import flet as ft
 import calendar
 import datetime
-from data.store import store
+from data.store import store, EventStore
 from utils.translations import translations
 from components.event_dialog import EventDialog
 from components.event_details_dialog import EventDetailsDialog
+from components.day_events_dialog import DayEventsDialog  # ✅ НОВЫЙ ИМПОРТ
 
 class MonthView(ft.Column):
     def __init__(self, on_day_click=None):
@@ -14,7 +15,7 @@ class MonthView(ft.Column):
         self.current_date = datetime.date.today()
         self.filters = {"events": True, "tasks": True}
         self.events_cache = []
-        self.is_loading = True # Start loading immediately, did_mount will fetch
+        self.is_loading = True
         self.calendar_grid = ft.Column(expand=True, spacing=1)
         self.controls = [
             self.build_header(),
@@ -53,13 +54,12 @@ class MonthView(ft.Column):
 
     def load_events(self):
         self.is_loading = True
-        self.render_calendar() # Show loading state
+        self.render_calendar()
         self.page.run_task(self._fetch_events)
 
     async def _fetch_events(self):
         year = self.current_date.year
         month = self.current_date.month
-        # Run in executor to avoid blocking main thread
         import asyncio
         loop = asyncio.get_running_loop()
         self.events_cache = await loop.run_in_executor(None, store.get_events_for_month, year, month)
@@ -76,14 +76,11 @@ class MonthView(ft.Column):
                     expand=True
                 )
             ]
-            # Don't return here if called from init, but we need to ensure controls are set
-            # If called from init, page might not be ready, so we just set controls
             return
 
         year = self.current_date.year
         month = self.current_date.month
         
-        # Get calendar matrix
         cal = calendar.monthcalendar(year, month)
         
         grid_rows = []
@@ -91,7 +88,7 @@ class MonthView(ft.Column):
             row_controls = []
             for day in week:
                 if day == 0:
-                    # Empty day from other month
+                    # Пустая ячейка из другого месяца
                     row_controls.append(
                         ft.Container(
                             expand=True,
@@ -104,7 +101,7 @@ class MonthView(ft.Column):
                                 month == datetime.date.today().month and 
                                 year == datetime.date.today().year)
                     
-                    # Filter events from cache
+                    # Фильтруем события для этого дня
                     day_events = [
                         e for e in self.events_cache 
                         if int(e["start"].split(" ")[0].split("-")[2]) == day and 
@@ -113,15 +110,64 @@ class MonthView(ft.Column):
                             (e.get("type") != "task" and self.filters.get("events", True))
                         )
                     ]
+                    
+                    # ✅ НОВАЯ ЛОГИКА: Показываем максимум 2 события + индикатор
+                    MAX_VISIBLE_EVENTS = 2
+                    visible_events = day_events[:MAX_VISIBLE_EVENTS]
+                    remaining_count = len(day_events) - MAX_VISIBLE_EVENTS
+                    
+                    # Создаём список контролов для событий
+                    event_controls = []
+                    
+                    # Добавляем видимые события
+                    for ev in visible_events:
+                        event_controls.append(
+                            ft.Container(
+                                content=ft.Text(
+                                    f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
+                                    size=10,
+                                    color=ft.Colors.WHITE,
+                                    no_wrap=True,
+                                    overflow=ft.TextOverflow.ELLIPSIS,
+                                ),
+                                bgcolor=ft.Colors.RED_400 if ev.get("type") == "task" else ft.Colors.BLUE_400,
+                                border_radius=4,
+                                padding=ft.padding.symmetric(horizontal=4, vertical=2),
+                                width=100,
+                                on_click=lambda e, ev2=ev: self.open_event_details(ev2),
+                                ink=True,
+                            )
+                        )
+                    
+                    # ✅ Добавляем индикатор "+N ещё" если событий больше
+                    if remaining_count > 0:
+                        event_controls.append(
+                            ft.Container(
+                                content=ft.Text(
+                                    f"+{remaining_count} ещё",
+                                    size=9,
+                                    color=ft.Colors.PRIMARY,
+                                    weight=ft.FontWeight.BOLD,
+                                ),
+                                bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                border_radius=4,
+                                padding=ft.padding.symmetric(horizontal=6, vertical=2),
+                                width=100,
+                                on_click=lambda e, d=day, m=month, y=year, events=day_events: self.show_all_events(y, m, d, events),
+                                ink=True,
+                                tooltip=f"Показать все {len(day_events)} событий",
+                            )
+                        )
 
                     day_content = ft.Column(
                         controls=[
+                            # Номер дня
                             ft.Container(
                                 content=ft.Text(
-                                    str(day), 
-                                    size=12, 
+                                    str(day),
+                                    size=12,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.Colors.ON_SURFACE if not is_today else ft.Colors.WHITE
+                                    color=ft.Colors.ON_SURFACE if not is_today else ft.Colors.WHITE,
                                 ),
                                 bgcolor=ft.Colors.BLUE if is_today else None,
                                 border_radius=15,
@@ -129,40 +175,31 @@ class MonthView(ft.Column):
                                 alignment=ft.alignment.center,
                                 width=30,
                                 height=30,
-                                margin=5
+                                margin=5,
                             ),
-                            # Events
-                            ft.Column(
-                                controls=[
-                                    ft.Container(
-                                        content=ft.Text(
-                                            e["title"], 
-                                            size=10, 
-                                            color=ft.Colors.WHITE, 
-                                            no_wrap=True, 
-                                            overflow=ft.TextOverflow.ELLIPSIS
-                                        ),
-                                        bgcolor=ft.Colors.RED_400 if e.get("type") == "task" else ft.Colors.BLUE_400,
-                                        border_radius=4,
-                                        padding=ft.padding.symmetric(horizontal=4, vertical=2),
-                                        width=100,
-                                        on_click=lambda e, ev=e: self.open_event_details(ev),
-                                        ink=True,
-                                    ) for e in day_events
-                                ],
-                                spacing=2
-                            )
+                            # ✅ События с ограничением высоты
+                            ft.Container(
+                                content=ft.Column(
+                                    controls=event_controls,
+                                    spacing=2,
+                                ),
+                                # Ограничиваем высоту контейнера с событиями
+                                height=70,  # Примерно 2 события + индикатор
+                                alignment=ft.alignment.top_center,
+                            ),
                         ],
                         alignment=ft.MainAxisAlignment.START,
-                        spacing=2
+                        spacing=2,
                     )
+                    
+                    cell_bgcolor = ft.Colors.SURFACE if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.WHITE
                     
                     row_controls.append(
                         ft.Container(
                             content=day_content,
                             expand=True,
-                            bgcolor=ft.Colors.SURFACE if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.WHITE,
-                            border=ft.border.all(0.5, ft.Colors.OUTLINE_VARIANT),
+                            bgcolor=cell_bgcolor,
+                            border=ft.border.all(0.5, ft.Colors.GREY_300),
                             padding=0,
                             alignment=ft.alignment.top_center,
                             on_click=lambda e, d=day, m=month, y=year: self.handle_day_click(y, m, d),
@@ -181,7 +218,6 @@ class MonthView(ft.Column):
         self.calendar_grid.controls = grid_rows
 
     def prev_month(self, e):
-        # Go back one month
         month = self.current_date.month - 1
         year = self.current_date.year
         if month < 1:
@@ -189,8 +225,6 @@ class MonthView(ft.Column):
             year -= 1
         self.current_date = self.current_date.replace(year=year, month=month, day=1)
         
-        # Update header text
-        # Update header text
         month_name = translations.get("months")[month - 1]
         self.controls[0].controls[0].controls[1].value = f"{month_name} {year}"
         
@@ -198,7 +232,6 @@ class MonthView(ft.Column):
         self.update()
 
     def next_month(self, e):
-        # Go forward one month
         month = self.current_date.month + 1
         year = self.current_date.year
         if month > 12:
@@ -206,8 +239,6 @@ class MonthView(ft.Column):
             year += 1
         self.current_date = self.current_date.replace(year=year, month=month, day=1)
         
-        # Update header text
-        # Update header text
         month_name = translations.get("months")[month - 1]
         self.controls[0].controls[0].controls[1].value = f"{month_name} {year}"
         
@@ -215,18 +246,35 @@ class MonthView(ft.Column):
         self.update()
 
     def open_event_details(self, event):
+        """Открывает детали одного события"""
         dialog = EventDetailsDialog(self.page, event, on_dismiss=self.refresh_calendar)
         self.page.open(dialog)
 
+    def show_all_events(self, year, month, day, events):
+        """
+        ✅ НОВЫЙ МЕТОД: Открывает диалог со всеми событиями дня
+        Вызывается при клике на "+N ещё"
+        """
+        date = datetime.date(year, month, day)
+        dialog = DayEventsDialog(
+            page=self.page,
+            date=date,
+            events=events,
+            on_dismiss=self.refresh_calendar
+        )
+        self.page.open(dialog)
+
     def refresh_calendar(self):
-        self.render_calendar()
-        self.update()
+        """Перезагружает календарь после изменений"""
+        self.load_events()
 
     def update_filter(self, filters):
+        """Обновляет фильтры событий/задач"""
         self.filters = filters
         self.render_calendar()
         self.update()
 
     def handle_day_click(self, year, month, day):
+        """Обработчик клика на день"""
         if self.on_day_click:
             self.on_day_click(datetime.date(year, month, day))
