@@ -4,6 +4,7 @@ from data.store import store
 class DietView(ft.Column):
     """
     Страница диеты с возможностью редактирования предпочтений.
+    + НОВОЕ: Отображение цели диеты и место для таблицы питания
     """
     def __init__(self, page: ft.Page, user_info: dict):
         super().__init__()
@@ -45,6 +46,8 @@ class DietView(ft.Column):
             self.show_empty_state()
         else:
             self.show_editable_preferences()
+            # ✅ НОВОЕ: Добавляем заготовку для таблицы питания
+            self.add_meal_plan_section()
     
     def show_empty_state(self):
         """Показывает пустое состояние (тест не пройден)"""
@@ -90,7 +93,7 @@ class DietView(ft.Column):
     def show_editable_preferences(self):
         """Показывает предпочтения с возможностью редактирования"""
         
-        # ✅ НОВЫЙ БЛОК: Заголовок секции с предпочтениями
+        # Заголовок секции с предпочтениями
         preferences_header = ft.Container(
             content=ft.Row(
                 controls=[
@@ -116,7 +119,7 @@ class DietView(ft.Column):
         
         self.controls.append(preferences_header)
         
-        # ✅ ИЗМЕНЕНО: Все секции теперь внутри контейнера
+        # Контейнер с предпочтениями
         preferences_container = ft.Container(
             content=ft.Column(
                 controls=[],
@@ -137,6 +140,44 @@ class DietView(ft.Column):
         avoid = self.temp_changes.get("avoid_foods", self.preferences.get("avoid_foods", []))
         meal_freq = self.temp_changes.get("meal_frequency", self.preferences.get("meal_frequency", "3"))
         medical = self.temp_changes.get("medical_notes", self.preferences.get("medical_notes", ""))
+        diet_goal = self.temp_changes.get("diet_goal", self.preferences.get("diet_goal", ""))  # ✅ НОВОЕ
+        
+        # ========== СЕКЦИЯ 0: ЦЕЛЬ ДИЕТЫ (✅ НОВАЯ СЕКЦИЯ) ==========
+        if diet_goal:
+            goal_labels = {
+                "weight_loss": ("⚖️ Weight Loss", ft.Colors.ORANGE_600),
+                "muscle_gain": ("💪 Muscle Gain", ft.Colors.PURPLE_600),
+                "healthy_lifestyle": ("🏃 Healthy Lifestyle", ft.Colors.GREEN_600),
+                "meal_planning": ("🍽️ Regular Meal Planning", ft.Colors.BLUE_600),
+            }
+            
+            goal_label, goal_color = goal_labels.get(diet_goal, ("📋 Not Set", ft.Colors.GREY_600))
+            
+            goal_section = ft.Container(
+                content=ft.Column([
+                    ft.Row([
+                        ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD),
+                        ft.Container(expand=True),
+                        ft.Container(
+                            content=ft.Text(
+                                goal_label,
+                                size=16,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.WHITE
+                            ),
+                            bgcolor=goal_color,
+                            padding=ft.padding.symmetric(horizontal=15, vertical=8),
+                            border_radius=20,
+                        )
+                    ])
+                ]),
+                padding=15,
+                border=ft.border.all(2, goal_color),
+                border_radius=8,
+                bgcolor=ft.Colors.with_opacity(0.1, goal_color)
+            )
+            
+            preferences_container.content.controls.append(goal_section)
         
         # ========== СЕКЦИЯ 1: Тип питания ==========
         meal_labels = {
@@ -219,7 +260,7 @@ class DietView(ft.Column):
         
         preferences_container.content.controls.append(cuisine_section)
         
-        # ========== СЕКЦИЯ 3: Продукты которых избегать ==========
+        # ========== СЕКЦИЯ 3: Избегаемые продукты ==========
         avoid_labels = {
             "dairy": "🥛 Dairy",
             "gluten": "🌾 Gluten",
@@ -319,7 +360,7 @@ class DietView(ft.Column):
         # Добавляем контейнер с предпочтениями
         self.controls.append(preferences_container)
         
-        # ========== КНОПКИ ДЕЙСТВИЙ (вне контейнера) ==========
+        # ========== КНОПКИ ДЕЙСТВИЙ ==========
         action_buttons = ft.Row(
             controls=[
                 ft.ElevatedButton(
@@ -348,7 +389,101 @@ class DietView(ft.Column):
         self.controls.append(ft.Container(height=10))
         self.controls.append(action_buttons)
     
-    # ========== МЕТОДЫ ДЛЯ ОБРАБОТКИ ИЗМЕНЕНИЙ (без изменений) ==========
+    def add_meal_plan_section(self):
+        """
+        ✅ НОВАЯ СЕКЦИЯ: Таблица плана питания на неделю
+        Пока заготовка, будет заполняться AI в следующем шаге
+        """
+        self.controls.append(ft.Container(height=30))
+        self.controls.append(ft.Divider())
+        
+        # Заголовок секции
+        meal_plan_header = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(ft.Icons.CALENDAR_MONTH, size=24, color=ft.Colors.GREEN_600),
+                    ft.Text(
+                        "Your Weekly Meal Plan",
+                        size=22,
+                        weight=ft.FontWeight.BOLD,
+                        color=ft.Colors.GREEN_900
+                    ),
+                    ft.Container(expand=True),
+                    # ✅ КНОПКА ДЛЯ ГЕНЕРАЦИИ (будет работать после Extended Mode)
+                    ft.ElevatedButton(
+                        text="Generate Meal Plan",
+                        icon=ft.Icons.AUTO_AWESOME,
+                        on_click=self.generate_meal_plan,
+                        style=ft.ButtonStyle(
+                            color=ft.Colors.WHITE,
+                            bgcolor=ft.Colors.GREEN_600,
+                        )
+                    )
+                ],
+                spacing=10
+            ),
+            padding=ft.padding.symmetric(vertical=15, horizontal=20),
+            bgcolor=ft.Colors.GREEN_50,
+            border_radius=ft.border_radius.only(top_left=10, top_right=10),
+            border=ft.border.only(
+                left=ft.BorderSide(3, ft.Colors.GREEN_400),
+                right=ft.BorderSide(1, ft.Colors.GREEN_200),
+                top=ft.BorderSide(1, ft.Colors.GREEN_200),
+            )
+        )
+        
+        self.controls.append(meal_plan_header)
+        
+        # ✅ ЗАГОТОВКА: Пустая таблица или placeholder
+        meal_plan_container = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Icon(ft.Icons.RESTAURANT, size=60, color=ft.Colors.GREY_400),
+                    ft.Container(height=10),
+                    ft.Text(
+                        "No meal plan generated yet",
+                        size=18,
+                        color=ft.Colors.GREY_600,
+                        text_align=ft.TextAlign.CENTER
+                    ),
+                    ft.Container(height=5),
+                    ft.Text(
+                        "Click 'Generate Meal Plan' to get AI-powered recommendations",
+                        size=14,
+                        color=ft.Colors.GREY_500,
+                        text_align=ft.TextAlign.CENTER
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                alignment=ft.MainAxisAlignment.CENTER
+            ),
+            height=300,
+            padding=20,
+            border=ft.border.all(1, ft.Colors.GREEN_200),
+            border_radius=ft.border_radius.only(bottom_left=10, bottom_right=10),
+            bgcolor=ft.Colors.WHITE,
+            alignment=ft.alignment.center
+        )
+        
+        self.controls.append(meal_plan_container)
+    
+    def generate_meal_plan(self, e):
+        """
+        ✅ ЗАГОТОВКА: Генерация плана питания через AI
+        Будет реализована в Extended Mode
+        """
+        snack = ft.SnackBar(
+            content=ft.Text("🚧 AI meal plan generation coming soon! (Needs Extended Mode)"),
+            bgcolor=ft.Colors.BLUE_400
+        )
+        self.page_ref.open(snack)
+        
+        # TODO: После Extended Mode здесь будет:
+        # 1. Вызов diet_ai_service.py для генерации плана
+        # 2. Отображение таблицы 7x3 (неделя x приёмы пищи)
+        # 3. Возможность добавить в календарь
+    
+    # ========== МЕТОДЫ ДЛЯ ОБРАБОТКИ ИЗМЕНЕНИЙ ==========
     
     def toggle_meal_type(self, value):
         """Переключение типа питания (макс 2)"""

@@ -26,7 +26,7 @@ class DietQuizView(ft.Column):
             {
                 "id": "meal_preference",
                 "question": "What type of meals do you prefer? (Select 1-2 options)",
-                "type": "multiple_choice_limited",  # ✅ НОВЫЙ ТИП
+                "type": "multiple_choice_limited",
                 "max_selections": 2,
                 "options": [
                     {"value": "vegetarian", "label": "🥗 Vegetarian", "icon": ft.Icons.ECO},
@@ -71,7 +71,19 @@ class DietQuizView(ft.Column):
                     {"value": "3", "label": "3 meals"},
                     {"value": "4", "label": "4-5 small meals"},
                 ]
-            }
+            },
+            # ✅ НОВЫЙ ВОПРОС: Цель диеты
+            {
+                "id": "diet_goal",
+                "question": "What is your diet goal?",
+                "type": "single_choice_cards",  # Используем карточки как для meal_preference
+                "options": [
+                    {"value": "weight_loss", "label": "⚖️ Weight Loss", "icon": ft.Icons.TRENDING_DOWN},
+                    {"value": "muscle_gain", "label": "💪 Muscle Gain", "icon": ft.Icons.FITNESS_CENTER},
+                    {"value": "healthy_lifestyle", "label": "🏃 Healthy Lifestyle", "icon": ft.Icons.FAVORITE},
+                    {"value": "meal_planning", "label": "🍽️ Regular Meal Planning", "icon": ft.Icons.RESTAURANT_MENU},
+                ]
+            },
         ]
         
         # UI элементы
@@ -177,7 +189,7 @@ class DietQuizView(ft.Column):
         self.question_title.value = f"Question {self.current_question + 1}/{len(self.questions)}"
         self.question_title.update()
         
-        # ✅ ИСПРАВЛЕНО: Полностью очищаем контейнер
+        # Полностью очищаем контейнер
         self.question_container.controls.clear()
         
         # Добавляем текст вопроса
@@ -199,6 +211,9 @@ class DietQuizView(ft.Column):
             self.render_checkbox(question)
         elif question["type"] == "single_choice":
             self.render_single_choice(question)
+        elif question["type"] == "single_choice_cards":
+            # ✅ НОВЫЙ ТИП: Карточки для одиночного выбора
+            self.render_single_choice_cards(question)
         
         # Показываем кнопку Back если не первый вопрос
         self.back_button.visible = self.current_question > 0
@@ -215,11 +230,62 @@ class DietQuizView(ft.Column):
         self.next_button.update()
         self.medical_notes_field.update()
         
-        # ✅ ИСПРАВЛЕНО: Обновляем весь контейнер
+        # Обновляем весь контейнер
         self.question_container.update()
     
+    def render_single_choice_cards(self, question):
+        """✅ НОВЫЙ МЕТОД: Карточки для одиночного выбора (для diet_goal)"""
+        current_answer = self.answers.get(question["id"])
+        
+        cards_row = ft.Row(
+            controls=[],
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=15,
+            wrap=True
+        )
+        
+        for option in question["options"]:
+            is_selected = option["value"] == current_answer
+            
+            card = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.Icon(
+                            option.get("icon", ft.Icons.CIRCLE),
+                            size=40,
+                            color=ft.Colors.BLUE_400 if is_selected else ft.Colors.GREY_600
+                        ),
+                        ft.Container(height=10),
+                        ft.Text(
+                            option["label"],
+                            size=14,
+                            text_align=ft.TextAlign.CENTER,
+                            weight=ft.FontWeight.BOLD if is_selected else ft.FontWeight.NORMAL
+                        ),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0
+                ),
+                width=140,
+                height=130,
+                border=ft.border.all(
+                    3 if is_selected else 2,
+                    ft.Colors.BLUE_400 if is_selected else ft.Colors.GREY_300
+                ),
+                border_radius=10,
+                padding=15,
+                bgcolor=ft.Colors.BLUE_50 if is_selected else None,
+                ink=True,
+                on_click=lambda e, val=option["value"]: self.select_option(question["id"], val),
+                animate=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT)
+            )
+            
+            cards_row.controls.append(card)
+        
+        self.question_container.controls.append(cards_row)
+    
     def render_multiple_choice_limited(self, question):
-        """✅ НОВЫЙ МЕТОД: Множественный выбор с ограничением (1-2 варианта)"""
+        """Множественный выбор с ограничением (1-2 варианта)"""
         current_answers = self.answers.get(question["id"], [])
         max_selections = question.get("max_selections", 2)
         
@@ -271,7 +337,7 @@ class DietQuizView(ft.Column):
         self.question_container.controls.append(cards_row)
     
     def toggle_limited_selection(self, question_id, value, max_selections):
-        """✅ НОВЫЙ МЕТОД: Переключение с ограничением количества"""
+        """Переключение с ограничением количества"""
         if question_id not in self.answers:
             self.answers[question_id] = []
         
@@ -293,10 +359,9 @@ class DietQuizView(ft.Column):
         self.render_question()
     
     def render_checkbox(self, question):
-        """✅ ИСПРАВЛЕНО: Чекбоксы по центру"""
+        """Чекбоксы по центру"""
         current_answers = self.answers.get(question["id"], [])
         
-        # ✅ Контейнер с центрированием
         checkbox_container = ft.Container(
             content=ft.Column(
                 controls=[],
@@ -321,10 +386,9 @@ class DietQuizView(ft.Column):
         self.question_container.controls.append(checkbox_container)
     
     def render_single_choice(self, question):
-        """✅ ИСПРАВЛЕНО: Радио кнопки по центру"""
+        """Радио кнопки по центру"""
         current_answer = self.answers.get(question["id"])
         
-        # ✅ Правильное создание RadioGroup
         radio_column = ft.Column(
             controls=[
                 ft.Radio(value=option["value"], label=option["label"])
@@ -339,7 +403,6 @@ class DietQuizView(ft.Column):
             on_change=lambda e: self.select_option(question["id"], e.control.value)
         )
         
-        # ✅ Центрируем радио группу
         centered_container = ft.Container(
             content=radio_group,
             alignment=ft.alignment.center,
