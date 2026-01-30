@@ -1,5 +1,6 @@
 import flet as ft
 from data.store import store
+from components.diet_goal_dialog import DietGoalDialog
 
 class DietView(ft.Column):
     """
@@ -159,15 +160,26 @@ class DietView(ft.Column):
                         ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD),
                         ft.Container(expand=True),
                         ft.Container(
-                            content=ft.Text(
-                                goal_label,
-                                size=16,
-                                weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.WHITE
-                            ),
+                            content=ft.Row([
+                                ft.Text(
+                                    goal_label,
+                                    size=16,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=ft.Colors.WHITE
+                                ),
+                                ft.Container(width=5),
+                                ft.Icon(
+                                    ft.Icons.EDIT,
+                                    size=16,
+                                    color=ft.Colors.WHITE
+                                ),
+                            ]),
                             bgcolor=goal_color,
                             padding=ft.padding.symmetric(horizontal=15, vertical=8),
                             border_radius=20,
+                            ink=True,
+                            on_click=lambda e: self.show_goal_dialog(),  # ✅ НОВЫЙ МЕТОД
+                            tooltip="Click to change goal"
                         )
                     ])
                 ]),
@@ -555,6 +567,31 @@ class DietView(ft.Column):
         snack = ft.SnackBar(content=ft.Text("Changes reset to saved values"), bgcolor=ft.Colors.BLUE_400)
         self.page_ref.open(snack)
     
+    def show_goal_dialog(self):
+        """✅ НОВЫЙ МЕТОД: Показывает диалог изменения цели диеты"""
+        current_goal = self.temp_changes.get("diet_goal", self.preferences.get("diet_goal", ""))
+        
+        def on_goal_change(new_goal):
+            """Callback при изменении цели"""
+            self.temp_changes["diet_goal"] = new_goal
+            self.rebuild_ui()
+            
+            # Показываем уведомление
+            snack = ft.SnackBar(
+                content=ft.Text(f"✅ Diet goal changed! Don't forget to save."),
+                bgcolor=ft.Colors.BLUE_400
+            )
+            self.page_ref.open(snack)
+        
+        # Открываем диалог
+        dialog = DietGoalDialog(
+            self.page_ref,
+            current_goal,
+            on_goal_change
+        )
+        self.page_ref.open(dialog)
+        self.page_ref.update()
+
     def take_quiz(self, e):
         from components.diet_quiz_view import DietQuizView
         self.page_ref.clean()

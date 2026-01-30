@@ -21,8 +21,21 @@ class DietQuizView(ft.Column):
         self.current_question = 0
         self.answers = {}
         
-        # Список вопросов
+        # ✅ ОБНОВЛЕНО: Вопрос о цели диеты теперь ПЕРВЫЙ
         self.questions = [
+            # ═══ ВОПРОС 1: ЦЕЛЬ ДИЕТЫ (✅ ПЕРЕНЕСЁН НА 1-Е МЕСТО) ═══
+            {
+                "id": "diet_goal",
+                "question": "What is your main diet goal?",
+                "type": "single_choice_cards",
+                "options": [
+                    {"value": "weight_loss", "label": "⚖️ Weight Loss", "icon": ft.Icons.TRENDING_DOWN},
+                    {"value": "muscle_gain", "label": "💪 Muscle Gain", "icon": ft.Icons.FITNESS_CENTER},
+                    {"value": "healthy_lifestyle", "label": "🏃 Healthy Lifestyle", "icon": ft.Icons.FAVORITE},
+                    {"value": "meal_planning", "label": "🍽️ Regular Meal Planning", "icon": ft.Icons.RESTAURANT_MENU},
+                ]
+            },
+            # ═══ ВОПРОС 2: ТИП ПИТАНИЯ ═══
             {
                 "id": "meal_preference",
                 "question": "What type of meals do you prefer? (Select 1-2 options)",
@@ -36,6 +49,7 @@ class DietQuizView(ft.Column):
                     {"value": "balanced", "label": "⚖️ Balanced (everything)", "icon": ft.Icons.RESTAURANT},
                 ]
             },
+            # ═══ ВОПРОС 3: ЛЮБИМЫЕ КУХНИ ═══
             {
                 "id": "cuisine_preference",
                 "question": "What cuisines do you enjoy? (Select multiple)",
@@ -49,6 +63,7 @@ class DietQuizView(ft.Column):
                     {"value": "indian", "label": "🍛 Indian"},
                 ]
             },
+            # ═══ ВОПРОС 4: ИЗБЕГАЕМЫЕ ПРОДУКТЫ ═══
             {
                 "id": "avoid_foods",
                 "question": "Are there any foods you want to avoid?",
@@ -62,6 +77,7 @@ class DietQuizView(ft.Column):
                     {"value": "none", "label": "❌ None"},
                 ]
             },
+            # ═══ ВОПРОС 5: ЧАСТОТА ПРИЁМОВ ПИЩИ ═══
             {
                 "id": "meal_frequency",
                 "question": "How many meals per day?",
@@ -70,18 +86,6 @@ class DietQuizView(ft.Column):
                     {"value": "2", "label": "2 meals"},
                     {"value": "3", "label": "3 meals"},
                     {"value": "4", "label": "4-5 small meals"},
-                ]
-            },
-            # ✅ НОВЫЙ ВОПРОС: Цель диеты
-            {
-                "id": "diet_goal",
-                "question": "What is your diet goal?",
-                "type": "single_choice_cards",  # Используем карточки как для meal_preference
-                "options": [
-                    {"value": "weight_loss", "label": "⚖️ Weight Loss", "icon": ft.Icons.TRENDING_DOWN},
-                    {"value": "muscle_gain", "label": "💪 Muscle Gain", "icon": ft.Icons.FITNESS_CENTER},
-                    {"value": "healthy_lifestyle", "label": "🏃 Healthy Lifestyle", "icon": ft.Icons.FAVORITE},
-                    {"value": "meal_planning", "label": "🍽️ Regular Meal Planning", "icon": ft.Icons.RESTAURANT_MENU},
                 ]
             },
         ]
@@ -212,7 +216,6 @@ class DietQuizView(ft.Column):
         elif question["type"] == "single_choice":
             self.render_single_choice(question)
         elif question["type"] == "single_choice_cards":
-            # ✅ НОВЫЙ ТИП: Карточки для одиночного выбора
             self.render_single_choice_cards(question)
         
         # Показываем кнопку Back если не первый вопрос
@@ -234,7 +237,7 @@ class DietQuizView(ft.Column):
         self.question_container.update()
     
     def render_single_choice_cards(self, question):
-        """✅ НОВЫЙ МЕТОД: Карточки для одиночного выбора (для diet_goal)"""
+        """Карточки для одиночного выбора (для diet_goal)"""
         current_answer = self.answers.get(question["id"])
         
         cards_row = ft.Row(
@@ -342,14 +345,11 @@ class DietQuizView(ft.Column):
             self.answers[question_id] = []
         
         if value in self.answers[question_id]:
-            # Убираем выбор
             self.answers[question_id].remove(value)
         else:
-            # Добавляем выбор
             if len(self.answers[question_id]) < max_selections:
                 self.answers[question_id].append(value)
             else:
-                # Показываем предупреждение
                 snack = ft.SnackBar(
                     content=ft.Text(f"You can select maximum {max_selections} options!"),
                     bgcolor=ft.Colors.ORANGE_400
