@@ -3,11 +3,52 @@ import datetime
 from data.store import store
 
 class EventDialog(ft.AlertDialog):
-    def __init__(self, page: ft.Page, on_dismiss=None):
+    def __init__(self, page: ft.Page, on_dismiss=None, event=None):
         self.page_ref = page
         self.on_dismiss_callback = on_dismiss
+        self.event = event  # Если передан, значит редактируем существующее событие
+        self.is_editing = event is not None
         
-        self.title_field = ft.TextField(label="Add title", autofocus=True, text_size=20, border=ft.InputBorder.UNDERLINE)
+        # Заполняем поля данными события, если редактируем
+        if event:
+            # Парсим дату и время из строки "YYYY-MM-DD HH:MM"
+            start_str = event.get("start", "")
+            end_str = event.get("end", "")
+            
+            if " " in start_str:
+                date_part, time_part = start_str.split(" ", 1)
+                start_date = date_part
+                start_time = time_part
+            else:
+                start_date = start_str
+                start_time = "09:00"
+            
+            if " " in end_str:
+                date_part, time_part = end_str.split(" ", 1)
+                end_time = time_part
+            else:
+                end_time = "10:00"
+            
+            title_value = event.get("title", "")
+            description_value = event.get("description", "") or ""
+            recurrence_value = event.get("recurrence") or "none"
+            is_task_value = event.get("type") == "task"
+        else:
+            title_value = ""
+            start_date = datetime.date.today().isoformat()
+            start_time = "09:00"
+            end_time = "10:00"
+            description_value = ""
+            recurrence_value = "none"
+            is_task_value = False
+        
+        self.title_field = ft.TextField(
+            label="Add title" if not self.is_editing else "Title",
+            value=title_value,
+            autofocus=True,
+            text_size=20,
+            border=ft.InputBorder.UNDERLINE
+        )
         
         # Date Picker
         self.date_picker = ft.DatePicker(
@@ -18,7 +59,7 @@ class EventDialog(ft.AlertDialog):
         
         self.date_field = ft.TextField(
             label="Date",
-            value=datetime.date.today().isoformat(),
+            value=start_date,
             read_only=True,
             expand=True,
             suffix=ft.IconButton(
@@ -31,19 +72,24 @@ class EventDialog(ft.AlertDialog):
         # Manual Time Fields
         self.start_time_field = ft.TextField(
             label="Start Time",
-            value="09:00",
+            value=start_time,
             hint_text="HH:MM",
             expand=True
         )
         
         self.end_time_field = ft.TextField(
             label="End Time",
-            value="10:00",
+            value=end_time,
             hint_text="HH:MM",
             expand=True
         )
 
-        self.description_field = ft.TextField(label="Description", multiline=True, min_lines=3)
+        self.description_field = ft.TextField(
+            label="Description",
+            value=description_value,
+            multiline=True,
+            min_lines=3
+        )
         self.recurrence_dropdown = ft.Dropdown(
             label="Repeat",
             options=[
@@ -54,13 +100,13 @@ class EventDialog(ft.AlertDialog):
                 ft.dropdown.Option("monthly", "Every month"),
                 ft.dropdown.Option("yearly", "Every year"),
             ],
-            value="none"
+            value=recurrence_value
         )
-        self.is_task_checkbox = ft.Checkbox(label="Mark as Task", value=False)
+        self.is_task_checkbox = ft.Checkbox(label="Mark as Task", value=is_task_value)
         
         super().__init__(
             modal=True,
-            title=ft.Text("Add Event"),
+            title=ft.Text("Edit Event" if self.is_editing else "Add Event"),
             content=ft.Column(
                 [
                     self.title_field,
@@ -119,13 +165,26 @@ class EventDialog(ft.AlertDialog):
         # Combine date and time
         start_dt = f"{self.date_field.value} {self.start_time_field.value}"
         end_dt = f"{self.date_field.value} {self.end_time_field.value}"
-            
-        store.add_event(
-            title=self.title_field.value,
-            start_date=start_dt,
-            end_date=end_dt,
-            description=self.description_field.value,
-            event_type="task" if self.is_task_checkbox.value else "event",
-            recurrence=self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
-        )
+        
+        if self.is_editing and self.event:
+            # Обновляем существующее событие
+            updates = {
+                "title": self.title_field.value,
+                "start": start_dt,
+                "end": end_dt,
+                "description": self.description_field.value,
+                "type": "task" if self.is_task_checkbox.value else "event",
+                "recurrence": self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
+            }
+            store.update_event(self.event["id"], updates)
+        else:
+            # Создаём новое событие
+            store.add_event(
+                title=self.title_field.value,
+                start_date=start_dt,
+                end_date=end_dt,
+                description=self.description_field.value,
+                event_type="task" if self.is_task_checkbox.value else "event",
+                recurrence=self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
+            )
         self.close_dialog(e)

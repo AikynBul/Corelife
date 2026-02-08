@@ -39,6 +39,7 @@ class Translations:
                 "time": "Time",
                 "close": "Close",
                 "calendar": "Calendar",
+                "diet_view": "Diet"
             },
             "ru": {
                 "app_title": "AI Календарь",
@@ -77,6 +78,7 @@ class Translations:
                 "time": "Время",
                 "close": "Закрыть",
                 "calendar": "Календарь",
+                "diet_view": "Диета"
             }
         }
 
