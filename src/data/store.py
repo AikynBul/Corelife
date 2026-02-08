@@ -360,6 +360,115 @@ class EventStore:
         except Exception as e:
             print(f"Error checking onboarding: {e}")
             return False
+    def save_weekly_meal_plan(self, user_id, meal_plan_data):
+        """
+        Сохраняет план питания на неделю.
+        
+        Args:
+            user_id (str): ID пользователя
+            meal_plan_data (dict): План с ключами goal, target_calories, plan, created_at
+        
+        Returns:
+            bool: True если успешно
+        """
+        try:
+            # Добавляем user_id
+            meal_plan_data["user_id"] = user_id
+            
+            # Сохраняем или обновляем
+            self.db.meal_plans.update_one(
+                {"user_id": user_id},
+                {"$set": meal_plan_data},
+                upsert=True
+            )
+            
+            print(f"✅ Meal plan saved for user {user_id}")
+            return True
+            
+        except Exception as e:
+            print(f"Error saving meal plan: {e}")
+            return False
+
+    def get_weekly_meal_plan(self, user_id):
+        """
+        Получает сохранённый план питания.
+        
+        Args:
+            user_id (str): ID пользователя
+        
+        Returns:
+            dict: План питания или None
+        """
+        try:
+            plan = self.db.meal_plans.find_one({"user_id": user_id})
+            
+            if plan:
+                # Удаляем _id для удобства
+                plan.pop("_id", None)
+                return plan
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error getting meal plan: {e}")
+            return None
+
+    def replace_meal_in_plan(self, user_id, day, meal_type, new_meal):
+        """
+        Заменяет конкретное блюдо в плане.
+        
+        Args:
+            user_id (str): ID пользователя
+            day (str): День недели (monday, tuesday, ...)
+            meal_type (str): Тип приёма пищи (breakfast, lunch, dinner, snack)
+            new_meal (dict): Новое блюдо с ключами name, calories, protein, carbs, fats
+        
+        Returns:
+            bool: True если успешно
+        """
+        try:
+            # Обновляем конкретное блюдо
+            update_path = f"plan.{day}.{meal_type}"
+            
+            result = self.db.meal_plans.update_one(
+                {"user_id": user_id},
+                {"$set": {update_path: new_meal}}
+            )
+            
+            if result.modified_count > 0:
+                print(f"✅ Replaced {day}'s {meal_type}")
+                return True
+            else:
+                print(f"⚠️ No meal plan found to update")
+                return False
+            
+        except Exception as e:
+            print(f"Error replacing meal: {e}")
+            return False
+
+    def delete_meal_plan(self, user_id):
+        """
+        Удаляет план питания пользователя.
+        
+        Args:
+            user_id (str): ID пользователя
+        
+        Returns:
+            bool: True если успешно
+        """
+        try:
+            result = self.db.meal_plans.delete_one({"user_id": user_id})
+            
+            if result.deleted_count > 0:
+                print(f"✅ Meal plan deleted for user {user_id}")
+                return True
+            else:
+                print(f"⚠️ No meal plan found to delete")
+                return False
+            
+        except Exception as e:
+            print(f"Error deleting meal plan: {e}")
+            return False
 
 # Global instance
 store = EventStore()
