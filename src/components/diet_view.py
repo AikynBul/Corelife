@@ -145,37 +145,123 @@ class DietView(ft.Column):
         meal_freq = self.temp_changes.get("meal_frequency", self.preferences.get("meal_frequency", "3"))
         medical = self.temp_changes.get("medical_notes", self.preferences.get("medical_notes", ""))
         
-        # ========== СЕКЦИЯ 0: Цель диеты ==========
-        goal_labels = {
-            "weight_loss": "⚖️ Weight Loss",
-            "muscle_gain": "💪 Muscle Gain",
-            "healthy_lifestyle": "🏃 Healthy Lifestyle",
-            "meal_planning": "🍽️ Regular Meal Planning"
+        # ========== СЕКЦИЯ 0: Цель диеты (✅ УЛУЧШЕННЫЙ ДИЗАЙН) ==========
+        goal_data = {
+            "weight_loss": {
+                "label": "Weight Loss",
+                "emoji": "⚖️",
+                "icon": ft.Icons.TRENDING_DOWN,
+                "color": ft.Colors.ORANGE_600,
+                "light_color": ft.Colors.ORANGE_50,
+                "border_color": ft.Colors.ORANGE_300,
+            },
+            "muscle_gain": {
+                "label": "Muscle Gain",
+                "emoji": "💪",
+                "icon": ft.Icons.FITNESS_CENTER,
+                "color": ft.Colors.PURPLE_600,
+                "light_color": ft.Colors.PURPLE_50,
+                "border_color": ft.Colors.PURPLE_300,
+            },
+            "healthy_lifestyle": {
+                "label": "Healthy Lifestyle",
+                "emoji": "🏃",
+                "icon": ft.Icons.FAVORITE,
+                "color": ft.Colors.GREEN_600,
+                "light_color": ft.Colors.GREEN_50,
+                "border_color": ft.Colors.GREEN_300,
+            },
+            "meal_planning": {
+                "label": "Regular Meal Planning",
+                "emoji": "🍽️",
+                "icon": ft.Icons.RESTAURANT_MENU,
+                "color": ft.Colors.BLUE_600,
+                "light_color": ft.Colors.BLUE_50,
+                "border_color": ft.Colors.BLUE_300,
+            }
         }
+        
+        current_goal_info = goal_data.get(goal, goal_data["meal_planning"])
         
         goal_section = ft.Container(
             content=ft.Column([
+                # Заголовок с кнопкой Edit
                 ft.Row([
-                    ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
                     ft.Container(expand=True),
                     ft.TextButton(
                         "Edit",
                         icon=ft.Icons.EDIT,
-                        on_click=self.open_goal_dialog
+                        on_click=self.open_goal_dialog,
+                        style=ft.ButtonStyle(color=current_goal_info["color"])
                     )
                 ]),
-                ft.Container(height=5),
-                ft.Chip(
-                    label=ft.Text(goal_labels.get(goal, goal)),
-                    bgcolor=ft.Colors.PURPLE_100,
-                    padding=15,
-                    leading=ft.Icon(ft.Icons.FLAG, size=20, color=ft.Colors.PURPLE_600)
+                ft.Container(height=10),
+                
+                # ✅ НОВАЯ КРАСИВАЯ КАРТОЧКА
+                ft.Container(
+                    content=ft.Row([
+                        # Левая часть: Emoji + Icon
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text(current_goal_info["emoji"], size=36),
+                                ft.Icon(
+                                    current_goal_info["icon"],
+                                    size=28,
+                                    color=current_goal_info["color"]
+                                ),
+                            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                            width=80,
+                            padding=15,
+                            bgcolor=current_goal_info["light_color"],
+                            border_radius=ft.border_radius.only(top_left=12, bottom_left=12),
+                        ),
+                        
+                        # Центр: Текст
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text(
+                                    current_goal_info["label"],
+                                    size=20,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=current_goal_info["color"]
+                                ),
+                                ft.Text(
+                                    "Your current diet objective",
+                                    size=12,
+                                    color=ft.Colors.GREY_600,
+                                    italic=True
+                                ),
+                            ], spacing=5),
+                            expand=True,
+                            padding=ft.padding.symmetric(horizontal=20, vertical=15)
+                        ),
+                        
+                        # Правая часть: Чекмарк
+                        ft.Container(
+                            content=ft.Icon(
+                                ft.Icons.CHECK_CIRCLE_ROUNDED,
+                                size=36,
+                                color=current_goal_info["color"]
+                            ),
+                            width=60,
+                            alignment=ft.alignment.center
+                        ),
+                    ], spacing=0),
+                    border=ft.border.all(2, current_goal_info["border_color"]),
+                    border_radius=12,
+                    bgcolor=ft.Colors.WHITE,
+                    shadow=ft.BoxShadow(
+                        spread_radius=0,
+                        blur_radius=8,
+                        color=ft.Colors.with_opacity(0.15, current_goal_info["color"]),
+                        offset=ft.Offset(0, 2)
+                    ),
                 )
             ]),
             padding=15,
-            border=ft.border.all(1, ft.Colors.PURPLE_200),
-            border_radius=8,
-            bgcolor=ft.Colors.PURPLE_50
+            bgcolor=current_goal_info["light_color"],
+            border_radius=10,
         )
         
         preferences_container.content.controls.append(goal_section)
