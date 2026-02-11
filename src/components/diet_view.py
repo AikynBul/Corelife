@@ -685,26 +685,104 @@ class DietView(ft.Column):
         
         self.controls.append(table_container)
         
-        # Итоговая калорийность
-        total_calories = sum(
-            sum(meal.get("calories", 0) for meal in day_meals.values())
-            for day_meals in plan.values()
-        ) // 7
+        # ✅ УЛУЧШЕНО: Итоговая калорийность + БЖУ
+        total_calories = 0
+        total_protein = 0
+        total_carbs = 0
+        total_fats = 0
+        
+        for day_meals in plan.values():
+            for meal in day_meals.values():
+                total_calories += meal.get("calories", 0)
+                total_protein += meal.get("protein", 0)
+                total_carbs += meal.get("carbs", 0)
+                total_fats += meal.get("fats", 0)
+        
+        # Средние значения на день
+        avg_calories = total_calories // 7
+        avg_protein = total_protein // 7
+        avg_carbs = total_carbs // 7
+        avg_fats = total_fats // 7
         
         summary = ft.Container(
-            content=ft.Row([
-                ft.Text(f"Average daily calories: {total_calories} kcal", size=14, weight=ft.FontWeight.BOLD),
-                ft.Container(expand=True),
-                ft.TextButton(
-                    "Delete Plan",
-                    icon=ft.Icons.DELETE_OUTLINE,
-                    on_click=self.delete_meal_plan,
-                    icon_color=ft.Colors.RED_400
-                )
-            ]),
-            padding=ft.padding.symmetric(vertical=10, horizontal=15),
+            content=ft.Column([
+                # Заголовок
+                ft.Row([
+                    ft.Icon(ft.Icons.ANALYTICS, size=20, color=ft.Colors.GREEN_700),
+                    ft.Text("Average Daily Nutrition", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_900),
+                    ft.Container(expand=True),
+                    ft.TextButton(
+                        "Delete Plan",
+                        icon=ft.Icons.DELETE_OUTLINE,
+                        on_click=self.delete_meal_plan,
+                        icon_color=ft.Colors.RED_400
+                    )
+                ], spacing=10),
+                ft.Container(height=8),
+                
+                # Статистика в виде карточек
+                ft.Row([
+                    # Калории
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Calories", size=11, color=ft.Colors.GREY_600),
+                            ft.Text(f"{avg_calories}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700),
+                            ft.Text("kcal", size=10, color=ft.Colors.GREY_500),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+                        padding=12,
+                        border_radius=8,
+                        bgcolor=ft.Colors.ORANGE_50,
+                        border=ft.border.all(1, ft.Colors.ORANGE_200),
+                        expand=True,
+                    ),
+                    
+                    # Белки
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Protein", size=11, color=ft.Colors.GREY_600),
+                            ft.Text(f"{avg_protein}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_700),
+                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+                        padding=12,
+                        border_radius=8,
+                        bgcolor=ft.Colors.RED_50,
+                        border=ft.border.all(1, ft.Colors.RED_200),
+                        expand=True,
+                    ),
+                    
+                    # Углеводы
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Carbs", size=11, color=ft.Colors.GREY_600),
+                            ft.Text(f"{avg_carbs}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+                        padding=12,
+                        border_radius=8,
+                        bgcolor=ft.Colors.BLUE_50,
+                        border=ft.border.all(1, ft.Colors.BLUE_200),
+                        expand=True,
+                    ),
+                    
+                    # Жиры
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Fats", size=11, color=ft.Colors.GREY_600),
+                            ft.Text(f"{avg_fats}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
+                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+                        padding=12,
+                        border_radius=8,
+                        bgcolor=ft.Colors.PURPLE_50,
+                        border=ft.border.all(1, ft.Colors.PURPLE_200),
+                        expand=True,
+                    ),
+                ], spacing=10),
+            ], spacing=5),
+            padding=15,
             bgcolor=ft.Colors.GREEN_50,
-            border_radius=5
+            border_radius=10,
+            border=ft.border.all(1, ft.Colors.GREEN_200),
         )
         
         self.controls.append(ft.Container(height=10))

@@ -3,51 +3,57 @@ import datetime
 from data.store import store
 
 class EventDialog(ft.AlertDialog):
+    """✅ УЛУЧШЕННЫЙ ДИЗАЙН: Современный диалог создания/редактирования событий"""
+    
     def __init__(self, page: ft.Page, on_dismiss=None, event=None):
         self.page_ref = page
         self.on_dismiss_callback = on_dismiss
-        self.event = event  # Если передан, значит редактируем существующее событие
+        self.event = event
         self.is_editing = event is not None
         
-        # Заполняем поля данными события, если редактируем
+        # Парсим данные события
         if event:
-            # Парсим дату и время из строки "YYYY-MM-DD HH:MM"
             start_str = event.get("start", "")
             end_str = event.get("end", "")
             
             if " " in start_str:
-                date_part, time_part = start_str.split(" ", 1)
-                start_date = date_part
-                start_time = time_part
+                start_date, start_time = start_str.split(" ", 1)
             else:
-                start_date = start_str
-                start_time = "09:00"
+                start_date, start_time = start_str, "09:00"
             
             if " " in end_str:
-                date_part, time_part = end_str.split(" ", 1)
-                end_time = time_part
+                _, end_time = end_str.split(" ", 1)
             else:
                 end_time = "10:00"
             
             title_value = event.get("title", "")
             description_value = event.get("description", "") or ""
+            category_value = event.get("category", "Personal")
             recurrence_value = event.get("recurrence") or "none"
             is_task_value = event.get("type") == "task"
+            priority_value = event.get("priority", "Medium")
         else:
             title_value = ""
             start_date = datetime.date.today().isoformat()
             start_time = "09:00"
             end_time = "10:00"
             description_value = ""
+            category_value = "Personal"
             recurrence_value = "none"
             is_task_value = False
+            priority_value = "Medium"
         
+        # ===== ПОЛЯ ФОРМЫ =====
+        
+        # Заголовок события
         self.title_field = ft.TextField(
-            label="Add title" if not self.is_editing else "Title",
+            label="Event title" if not self.is_editing else "Title",
             value=title_value,
             autofocus=True,
-            text_size=20,
-            border=ft.InputBorder.UNDERLINE
+            text_size=18,
+            border_radius=10,
+            filled=True,
+            prefix_icon=ft.Icons.EDIT_NOTE,
         )
         
         # Date Picker
@@ -62,34 +68,69 @@ class EventDialog(ft.AlertDialog):
             value=start_date,
             read_only=True,
             expand=True,
+            border_radius=10,
+            filled=True,
+            prefix_icon=ft.Icons.CALENDAR_TODAY,
             suffix=ft.IconButton(
-                icon=ft.Icons.CALENDAR_MONTH,
+                icon=ft.Icons.ARROW_DROP_DOWN,
                 tooltip="Pick date",
                 on_click=lambda _: self.page_ref.open(self.date_picker),
             ),
         )
-
-        # Manual Time Fields
+        
+        # Time Fields
         self.start_time_field = ft.TextField(
-            label="Start Time",
+            label="Start",
             value=start_time,
             hint_text="HH:MM",
-            expand=True
+            expand=True,
+            border_radius=10,
+            filled=True,
+            prefix_icon=ft.Icons.ACCESS_TIME,
         )
         
         self.end_time_field = ft.TextField(
-            label="End Time",
+            label="End",
             value=end_time,
             hint_text="HH:MM",
-            expand=True
+            expand=True,
+            border_radius=10,
+            filled=True,
+            prefix_icon=ft.Icons.ACCESS_TIME_FILLED,
         )
-
+        
+        # Category Dropdown
+        self.category_dropdown = ft.Dropdown(
+            label="Category",
+            options=[
+                ft.dropdown.Option("Routine", "🔄 Routine"),
+                ft.dropdown.Option("Sleep", "😴 Sleep"),
+                ft.dropdown.Option("Food", "🍽️ Food"),
+                ft.dropdown.Option("Study", "📚 Study"),
+                ft.dropdown.Option("Exercise", "💪 Exercise"),
+                ft.dropdown.Option("Work", "💼 Work"),
+                ft.dropdown.Option("Social", "👥 Social"),
+                ft.dropdown.Option("Health", "🏥 Health"),
+                ft.dropdown.Option("Personal", "👤 Personal"),
+                ft.dropdown.Option("Entertainment", "🎮 Entertainment"),
+            ],
+            value=category_value,
+            border_radius=10,
+            filled=True,
+        )
+        
+        # Description
         self.description_field = ft.TextField(
-            label="Description",
+            label="Description (optional)",
             value=description_value,
             multiline=True,
-            min_lines=3
+            min_lines=3,
+            max_lines=5,
+            border_radius=10,
+            filled=True,
         )
+        
+        # Repeat
         self.recurrence_dropdown = ft.Dropdown(
             label="Repeat",
             options=[
@@ -100,32 +141,134 @@ class EventDialog(ft.AlertDialog):
                 ft.dropdown.Option("monthly", "Every month"),
                 ft.dropdown.Option("yearly", "Every year"),
             ],
-            value=recurrence_value
+            value=recurrence_value,
+            border_radius=10,
+            filled=True,
         )
-        self.is_task_checkbox = ft.Checkbox(label="Mark as Task", value=is_task_value)
+        
+        # Task checkbox
+        self.is_task_checkbox = ft.Checkbox(
+            label="Mark as Task",
+            value=is_task_value,
+            on_change=self.toggle_task_mode
+        )
+        
+        # Priority (только для задач)
+        self.priority_dropdown = ft.Dropdown(
+            label="Priority",
+            options=[
+                ft.dropdown.Option("High", "🔥 High"),
+                ft.dropdown.Option("Medium", "⚡ Medium"),
+                ft.dropdown.Option("Low", "✨ Low"),
+            ],
+            value=priority_value,
+            border_radius=10,
+            filled=True,
+            visible=is_task_value,
+        )
+        
+        # ===== LAYOUT =====
         
         super().__init__(
             modal=True,
-            title=ft.Text("Edit Event" if self.is_editing else "Add Event"),
-            content=ft.Column(
-                [
-                    self.title_field,
-                    ft.Row([self.date_field]),
-                    ft.Row([self.start_time_field, self.end_time_field]),
-                    self.description_field,
-                    self.recurrence_dropdown,
-                    self.is_task_checkbox
-                ],
-                width=400,
-                height=400,
-                tight=True
+            title=ft.Row([
+                ft.Icon(
+                    ft.Icons.EDIT_CALENDAR if self.is_editing else ft.Icons.ADD_CIRCLE_OUTLINE,
+                    size=28,
+                    color=ft.Colors.BLUE_600
+                ),
+                ft.Text(
+                    "Edit Event" if self.is_editing else "Create Event",
+                    size=22,
+                    weight=ft.FontWeight.BOLD
+                ),
+            ], spacing=12),
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        # Заголовок
+                        self.title_field,
+                        ft.Container(height=10),
+                        
+                        # Дата и время
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text("📅 When", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
+                                ft.Container(height=5),
+                                self.date_field,
+                                ft.Container(height=5),
+                                ft.Row([self.start_time_field, self.end_time_field], spacing=10),
+                            ]),
+                            padding=15,
+                            border_radius=10,
+                            bgcolor=ft.Colors.BLUE_50,
+                        ),
+                        ft.Container(height=10),
+                        
+                        # Категория
+                        self.category_dropdown,
+                        ft.Container(height=10),
+                        
+                        # Описание
+                        self.description_field,
+                        ft.Container(height=10),
+                        
+                        # Повтор
+                        self.recurrence_dropdown,
+                        ft.Container(height=10),
+                        
+                        # Task & Priority
+                        ft.Container(
+                            content=ft.Column([
+                                self.is_task_checkbox,
+                                self.priority_dropdown,
+                            ], spacing=10),
+                            padding=10,
+                            border_radius=8,
+                            bgcolor=ft.Colors.ORANGE_50 if is_task_value else None,
+                        ),
+                    ],
+                    spacing=0,
+                    scroll=ft.ScrollMode.AUTO,
+                ),
+                width=500,
+                height=600,
+                padding=15,
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=self.close_dialog),
-                ft.TextButton("Save", on_click=self.save_event),
+                ft.TextButton(
+                    "Cancel",
+                    on_click=self.close_dialog,
+                    style=ft.ButtonStyle(
+                        color=ft.Colors.GREY_600,
+                    )
+                ),
+                ft.ElevatedButton(
+                    "Save Event" if not self.is_editing else "Update",
+                    icon=ft.Icons.CHECK_CIRCLE,
+                    on_click=self.save_event,
+                    style=ft.ButtonStyle(
+                        color=ft.Colors.WHITE,
+                        bgcolor=ft.Colors.BLUE_600,
+                        padding=15,
+                        elevation=2,
+                    )
+                ),
             ],
+            actions_alignment=ft.MainAxisAlignment.END,
         )
-
+    
+    def toggle_task_mode(self, e):
+        """Показывает/скрывает Priority при переключении Task checkbox"""
+        self.priority_dropdown.visible = self.is_task_checkbox.value
+        
+        # Меняем цвет фона контейнера
+        parent = self.is_task_checkbox.parent.parent
+        parent.bgcolor = ft.Colors.ORANGE_50 if self.is_task_checkbox.value else None
+        parent.update()
+        
+        self.priority_dropdown.update()
+    
     def change_date(self, e):
         if not self.date_picker.value:
             return
@@ -134,21 +277,22 @@ class EventDialog(ft.AlertDialog):
             selected = selected.date()
         self.date_field.value = selected.isoformat()
         self.date_field.update()
-
+    
     def close_dialog(self, e):
         self.open = False
         self.page_ref.close(self)
         self.page_ref.update()
         if self.on_dismiss_callback:
             self.on_dismiss_callback()
-
+    
     def save_event(self, e):
+        # Валидация заголовка
         if not self.title_field.value:
             self.title_field.error_text = "Title is required"
             self.title_field.update()
             return
-            
-        # Validate Time Format
+        
+        # Валидация времени
         import re
         time_pattern = re.compile(r"^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
         
@@ -156,13 +300,13 @@ class EventDialog(ft.AlertDialog):
             self.start_time_field.error_text = "Invalid (HH:MM)"
             self.start_time_field.update()
             return
-            
+        
         if not time_pattern.match(self.end_time_field.value):
             self.end_time_field.error_text = "Invalid (HH:MM)"
             self.end_time_field.update()
             return
-
-        # Combine date and time
+        
+        # Комбинируем дату и время
         start_dt = f"{self.date_field.value} {self.start_time_field.value}"
         end_dt = f"{self.date_field.value} {self.end_time_field.value}"
         
@@ -173,7 +317,9 @@ class EventDialog(ft.AlertDialog):
                 "start": start_dt,
                 "end": end_dt,
                 "description": self.description_field.value,
+                "category": self.category_dropdown.value,
                 "type": "task" if self.is_task_checkbox.value else "event",
+                "priority": self.priority_dropdown.value if self.is_task_checkbox.value else "Medium",
                 "recurrence": self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
             }
             store.update_event(self.event["id"], updates)
@@ -184,7 +330,10 @@ class EventDialog(ft.AlertDialog):
                 start_date=start_dt,
                 end_date=end_dt,
                 description=self.description_field.value,
+                category=self.category_dropdown.value,
                 event_type="task" if self.is_task_checkbox.value else "event",
+                priority=self.priority_dropdown.value if self.is_task_checkbox.value else "Medium",
                 recurrence=self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
             )
+        
         self.close_dialog(e)

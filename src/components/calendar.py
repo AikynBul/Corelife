@@ -7,6 +7,38 @@ from components.event_dialog import EventDialog
 from components.event_details_dialog import EventDetailsDialog
 from components.day_events_dialog import DayEventsDialog  # ✅ НОВЫЙ ИМПОРТ
 
+# ✅ НОВОЕ: Словарь цветов для категорий событий
+CATEGORY_COLORS = {
+    "Routine": ft.Colors.GREY_600,
+    "Sleep": ft.Colors.INDIGO_400,
+    "Food": ft.Colors.ORANGE_600,
+    "Study": ft.Colors.BLUE_600,
+    "Exercise": ft.Colors.GREEN_600,
+    "Work": ft.Colors.BLUE_GREY_600,
+    "Social": ft.Colors.PINK_400,
+    "Health": ft.Colors.RED_600,
+    "Personal": ft.Colors.PURPLE_600,
+    "Entertainment": ft.Colors.CYAN_400,
+}
+
+def get_event_color(event: dict) -> str:
+    """
+    Возвращает цвет события на основе категории
+    
+    Args:
+        event: Событие с полями category и type
+    
+    Returns:
+        Цвет для отображения
+    """
+    # Задачи всегда красные
+    if event.get("type") == "task":
+        return ft.Colors.RED_400
+    
+    # Получаем цвет по категории
+    category = event.get("category", "Personal")
+    return CATEGORY_COLORS.get(category, ft.Colors.BLUE_400)
+
 class MonthView(ft.Column):
     def __init__(self, on_day_click=None):
         super().__init__()
@@ -130,7 +162,7 @@ class MonthView(ft.Column):
                                     no_wrap=True,
                                     overflow=ft.TextOverflow.ELLIPSIS,
                                 ),
-                                bgcolor=ft.Colors.RED_400 if ev.get("type") == "task" else ft.Colors.BLUE_400,
+                                bgcolor=get_event_color(ev),  # ✅ ИЗМЕНЕНО: используем цвет по категории
                                 border_radius=4,
                                 padding=ft.padding.symmetric(horizontal=4, vertical=2),
                                 width=100,
