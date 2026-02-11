@@ -327,12 +327,23 @@ class ChatWidget(ft.Column):
         ✅ ОБНОВЛЕНО: Теперь использует task_scheduler для планирования дня
         """
         try:
-            # ✅ НОВАЯ ЛОГИКА: Проверяем хочет ли пользователь запланировать весь день
+            # ✅ ИСПРАВЛЕНО: Проверяем хочет ли пользователь запланировать весь день
+            # НЕ перехватываем "plan a meeting", "plan a workout" и т.д.
             text_lower = text.lower()
-            is_day_planning = any(keyword in text_lower for keyword in [
-                "plan my day", "schedule my day", "запланируй день", 
-                "распредели задачи", "мои задачи на сегодня", "что мне делать сегодня"
-            ])
+            
+            # Проверяем ТОЧНЫЕ фразы для планирования дня
+            is_day_planning = (
+                "plan my day" in text_lower or
+                "schedule my day" in text_lower or
+                "план my day" in text_lower or
+                "запланируй день" in text_lower or
+                "распредели задачи" in text_lower or
+                "мои задачи на сегодня" in text_lower or
+                "что мне делать сегодня" in text_lower or
+                # Специальный случай: "plan something" БЕЗ конкретики
+                (text_lower.strip() == "plan something") or
+                (text_lower.strip() == "plan my tasks")
+            )
             
             if is_day_planning:
                 # Используем task_scheduler для планирования всего дня
@@ -380,6 +391,7 @@ class ChatWidget(ft.Column):
             if isinstance(result, list):
                 # Множественные задачи
                 created_count = 0
+                smart_scheduled_count = 0  # ✅ ДОБАВЛЕНО: счётчик умно запланированных
                 
                 for item in result:
                     if item.get("action") == "create":
@@ -389,6 +401,7 @@ class ChatWidget(ft.Column):
                         if auto_schedule or item.get("start") == "AUTO" or "AUTO" in str(item.get("start", "")):
                             # Используем умное распределение
                             self.smart_schedule_event(item)
+                            smart_scheduled_count += 1  # ✅ ДОБАВЛЕНО
                         else:
                             # Обычное создание события с указанным временем
                             store.add_event(
@@ -405,14 +418,18 @@ class ChatWidget(ft.Column):
                 
                 # Показываем итоговое сообщение
                 if created_count > 0:
-                    if created_count == 1:
-                        # Уже показали сообщение в smart_schedule_event или выше
-                        pass
-                    else:
-                        self.add_message(
-                            f"✅ Created {created_count} tasks! Check your calendar.",
-                            is_user=False
-                        )
+                    # ✅ ИСПРАВЛЕНО: НЕ дублируем если smart_schedule_event уже отправил
+                    if smart_scheduled_count == 0:
+                        # Только если НЕ использовали умное планирование
+                        if created_count == 1:
+                            first_item = result[0]
+                            response_msg = first_item.get("response_message", f"✅ Event created! Check your calendar.")
+                            self.add_message(response_msg, is_user=False)
+                        else:
+                            self.add_message(
+                                f"✅ Created {created_count} tasks! Check your calendar.",
+                                is_user=False
+                            )
                     
                     # Обновляем календарь
                     self.refresh_calendar()

@@ -489,7 +489,16 @@ class DietView(ft.Column):
                         color=ft.Colors.GREEN_900
                     ),
                     ft.Container(expand=True),
-                    # ✅ Кнопка генерации
+                    # ✅ НОВАЯ КНОПКА: Add All to Calendar
+                    ft.OutlinedButton(
+                        text="Add All to Calendar",
+                        icon=ft.Icons.CALENDAR_TODAY,
+                        on_click=self.add_all_to_calendar,
+                        style=ft.ButtonStyle(
+                            color=ft.Colors.BLUE_600,
+                        )
+                    ) if self.meal_plan else None,
+                    # Кнопка генерации
                     ft.ElevatedButton(
                         text="Generate Meal Plan",
                         icon=ft.Icons.AUTO_AWESOME,
@@ -610,6 +619,15 @@ class DietView(ft.Column):
                 meal = day_meals.get(meal_type, {})
                 
                 if meal:
+                    # ✅ Кнопка добавления в календарь
+                    add_to_calendar_btn = ft.IconButton(
+                        icon=ft.Icons.CALENDAR_TODAY,
+                        icon_size=14,
+                        tooltip="Add to Calendar",
+                        icon_color=ft.Colors.BLUE_600,
+                        on_click=lambda e, meal_name=meal.get("name", ""), d=day, m=meal_type: self.add_meal_to_calendar(meal_name, d, m)
+                    )
+                    
                     # Кнопка замены блюда
                     replace_btn = ft.IconButton(
                         icon=ft.Icons.REFRESH,
@@ -622,6 +640,7 @@ class DietView(ft.Column):
                         content=ft.Column([
                             ft.Row([
                                 ft.Text(meal.get("name", "—"), size=11, weight=ft.FontWeight.BOLD, expand=True),
+                                add_to_calendar_btn,  # ✅ НОВАЯ КНОПКА
                                 replace_btn
                             ]),
                             ft.Text(f"{meal.get('calories', 0)} kcal", size=10, color=ft.Colors.GREY_600),
@@ -940,4 +959,81 @@ class DietView(ft.Column):
         
         quiz = DietQuizView(self.page_ref, self.user_info, on_complete)
         self.page_ref.add(quiz)
-        self.page_ref.update()
+        self.page_ref.update()    
+    # ========== МЕТОДЫ ДЛЯ ДОБАВЛЕНИЯ В КАЛЕНДАРЬ ==========
+    
+    def add_meal_to_calendar(self, meal_name, day, meal_type):
+        """✅ НОВОЕ: Открывает диалог добавления блюда в календарь"""
+        from components.add_meal_to_calendar_dialog import AddMealToCalendarDialog
+        
+        dialog = AddMealToCalendarDialog(
+            self.page_ref,
+            meal_name,
+            day,
+            meal_type,
+            on_dismiss=None  # Можно добавить обновление календаря
+        )
+        
+        self.page_ref.open(dialog)
+    
+    def add_all_to_calendar(self, e):
+        """✅ НОВОЕ: Добавляет все блюда из плана в календарь"""
+        if not self.meal_plan:
+            return
+        
+        import datetime
+        from data.store import store
+        
+        plan = self.meal_plan.get("plan", {})
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        
+        # Определяем типы приёмов пищи
+        meal_frequency = int(self.preferences.get("meal_frequency", "3"))
+        if meal_frequency == 2:
+            meal_types = ["breakfast", "dinner"]
+        elif meal_frequency == 3:
+            meal_types = ["breakfast", "lunch", "dinner"]
+        else:
+            meal_types = ["breakfast", "lunch", "snack", "dinner"]
+        
+        # Время по умолчанию для каждого приёма пищи
+        default_times = {
+            "breakfast": ("08:00", "09:00"),
+            "lunch": ("12:00", "13:00"),
+            "dinner": ("18:00", "19:00"),
+            "snack": ("15:00", "15:30")
+        }
+        
+        # Вычисляем понедельник текущей недели
+        today = datetime.date.today()
+        monday = today - datetime.timedelta(days=today.weekday())
+        
+        added_count = 0
+        
+        for day_index, day in enumerate(days):
+            day_meals = plan.get(day, {})
+            target_date = monday + datetime.timedelta(days=day_index)
+            date_str = target_date.strftime("%Y-%m-%d")
+            
+            for meal_type in meal_types:
+                meal = day_meals.get(meal_type)
+                if meal and meal.get("name"):
+                    start_time, end_time = default_times.get(meal_type, ("12:00", "13:00"))
+                    
+                    store.add_event(
+                        title=meal["name"],
+                        start_date=f"{date_str} {start_time}",
+                        end_date=f"{date_str} {end_time}",
+                        description=f"Meal from diet plan ({meal_type})\nCalories: {meal.get('calories', 0)} kcal",
+                        event_type="event",
+                        category="Food"
+                    )
+                    
+                    added_count += 1
+        
+        # Показываем уведомление
+        snack = ft.SnackBar(
+            content=ft.Text(f"✅ {added_count} meals added to calendar for this week!"),
+            bgcolor=ft.Colors.GREEN_400
+        )
+        self.page_ref.open(snack)

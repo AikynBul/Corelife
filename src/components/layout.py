@@ -19,7 +19,8 @@ class AppLayout(ft.Row):
         self.sidebar = ft.Container(
             content=Sidebar(
                 on_view_change=self.set_view,
-                on_filter_change=self.refresh_active_view
+                on_filter_change=self.refresh_active_view,
+                on_date_click=self.go_to_day  # ✅ ДОБАВЛЕНО: callback для клика на дату
             ),
             width=250,
             bgcolor=ft.Colors.SURFACE,
