@@ -153,10 +153,11 @@ class EventDialog(ft.AlertDialog):
             on_change=self.toggle_task_mode
         )
         
-        # Priority (только для задач)
+        # ✅ ИЗМЕНЕНО: Priority для ВСЕХ событий (4 уровня)
         self.priority_dropdown = ft.Dropdown(
-            label="Priority",
+            label="Priority / Importance",
             options=[
+                ft.dropdown.Option("Critical", "🔴 Critical"),
                 ft.dropdown.Option("High", "🔥 High"),
                 ft.dropdown.Option("Medium", "⚡ Medium"),
                 ft.dropdown.Option("Low", "✨ Low"),
@@ -164,7 +165,7 @@ class EventDialog(ft.AlertDialog):
             value=priority_value,
             border_radius=10,
             filled=True,
-            visible=is_task_value,
+            # ✅ visible=True всегда (убран visible=is_task_value)
         )
         
         # ===== LAYOUT =====
@@ -259,15 +260,13 @@ class EventDialog(ft.AlertDialog):
         )
     
     def toggle_task_mode(self, e):
-        """Показывает/скрывает Priority при переключении Task checkbox"""
-        self.priority_dropdown.visible = self.is_task_checkbox.value
+        """Меняет цвет фона при переключении Task checkbox"""
+        # ✅ ИЗМЕНЕНО: Priority теперь всегда видимый, только меняем фон
         
         # Меняем цвет фона контейнера
         parent = self.is_task_checkbox.parent.parent
         parent.bgcolor = ft.Colors.ORANGE_50 if self.is_task_checkbox.value else None
         parent.update()
-        
-        self.priority_dropdown.update()
     
     def change_date(self, e):
         if not self.date_picker.value:
@@ -319,7 +318,7 @@ class EventDialog(ft.AlertDialog):
                 "description": self.description_field.value,
                 "category": self.category_dropdown.value,
                 "type": "task" if self.is_task_checkbox.value else "event",
-                "priority": self.priority_dropdown.value if self.is_task_checkbox.value else "Medium",
+                "priority": self.priority_dropdown.value,  # ✅ ИЗМЕНЕНО: всегда сохраняем
                 "recurrence": self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
             }
             store.update_event(self.event["id"], updates)
@@ -332,7 +331,7 @@ class EventDialog(ft.AlertDialog):
                 description=self.description_field.value,
                 category=self.category_dropdown.value,
                 event_type="task" if self.is_task_checkbox.value else "event",
-                priority=self.priority_dropdown.value if self.is_task_checkbox.value else "Medium",
+                priority=self.priority_dropdown.value,  # ✅ ИЗМЕНЕНО: всегда сохраняем
                 recurrence=self.recurrence_dropdown.value if self.recurrence_dropdown.value != "none" else None
             )
         

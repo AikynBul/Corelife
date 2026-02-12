@@ -129,15 +129,19 @@ class Sidebar(ft.Container):
             e.page.update()
 
     def build_mini_calendar(self):
-        """✅ ИЗМЕНЕНО: Мини-календарь теперь кликабельный"""
+        """✅ ИЗМЕНЕНО: Мини-календарь теперь кликабельный, неделя с Monday"""
         today = datetime.date.today()
+        
+        # ✅ ИСПРАВЛЕНО: Устанавливаем первый день недели = Monday (0)
+        calendar.setfirstweekday(calendar.MONDAY)
         cal = calendar.monthcalendar(today.year, today.month)
         
         month_name = translations.get("months")[today.month - 1]
         
         rows = [
             ft.Text(f"{month_name} {today.year}", weight=ft.FontWeight.BOLD, size=14),
-            ft.Row([ft.Text(d, size=10, width=20, text_align=ft.TextAlign.CENTER) for d in ["S", "M", "T", "W", "T", "F", "S"]], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+            # ✅ ИСПРАВЛЕНО: Неделя начинается с Monday
+            ft.Row([ft.Text(d, size=10, width=20, text_align=ft.TextAlign.CENTER) for d in ["M", "T", "W", "T", "F", "S", "S"]], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
         ]
         
         for week in cal:

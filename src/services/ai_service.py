@@ -117,6 +117,68 @@ For chat or delete/reschedule actions, still return a single object (not array):
     ...
 }}
 
+pythonMeal Commands (NEW):
+User can add meals to their diet plan or calendar in TWO ways:
+
+=== METHOD 1: Direct meal addition ===
+User specifies the exact meal name:
+- "add [meal name] to [day]'s [meal type]"
+- "replace [day]'s [meal] with [new meal]"
+
+Examples:
+User: "Add chicken salad to Monday's lunch"
+→ {{
+  "action": "add_meal",
+  "meal_name": "Chicken salad",
+  "day": "monday",
+  "meal_type": "lunch",
+  "mode": "direct"
+}}
+
+User: "Replace Tuesday breakfast with oatmeal"
+→ {{
+  "action": "add_meal",
+  "meal_name": "Oatmeal",
+  "day": "tuesday",
+  "meal_type": "breakfast",
+  "mode": "replace"
+}}
+
+=== METHOD 2: Suggest meals ===
+User asks AI to suggest meals based on criteria:
+- "suggest meals with [ingredients]"
+- "find dishes with less/more than [X] [protein/calories/carbs/fats]"
+- "what can I cook with [ingredients]"
+
+Examples:
+User: "Suggest meals with eggs and beef"
+→ {{
+  "action": "suggest_meals",
+  "criteria": {{
+    "ingredients": ["eggs", "beef"],
+    "max_protein": null,
+    "min_protein": null,
+    "max_calories": null,
+    "min_calories": null,
+    "max_carbs": null,
+    "max_fats": null
+  }},
+  "response_message": "I'll find some great options for you!"
+}}
+
+User: "Find dishes with less than 300 calories and high protein"
+→ {{
+  "action": "suggest_meals",
+  "criteria": {{
+    "ingredients": [],
+    "max_calories": 300,
+    "min_protein": 25
+  }}
+}}
+
+Days: monday, tuesday, wednesday, thursday, friday, saturday, sunday
+Meal types: breakfast, lunch, dinner, snack
+
 Smart Scheduling Rules:
 7. If the user provides a task WITHOUT specific time (e.g., "study physics tomorrow", "gym session today"):
    - Set "auto_schedule": true in JSON
@@ -262,8 +324,8 @@ If the user's request is not about scheduling, deleting, or rescheduling, just c
             
             # Нормализуем: если не массив, оборачиваем в массив при необходимости
             if isinstance(parsed, dict):
-                # Одиночное действие (chat, delete, reschedule) или одна задача
-                if parsed.get("action") in ["chat", "delete", "reschedule"]:
+                # Одиночное действие (chat, delete, reschedule, add_meal, suggest_meals) или одна задача
+                if parsed.get("action") in ["chat", "delete", "reschedule", "add_meal", "suggest_meals"]:
                     # Возвращаем как есть (не массив)
                     return parsed
                 else:

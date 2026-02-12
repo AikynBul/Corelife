@@ -3,6 +3,7 @@ import random
 from data.store import store
 from services.ai_service import AIService
 from services.task_scheduler import TaskScheduler  # ✅ НОВЫЙ ИМПОРТ
+from services.meal_nutrition_ai import MealNutritionAI
 
 class ChatWidget(ft.Column):
     MOTIVATION_QUOTES = [
@@ -27,6 +28,7 @@ class ChatWidget(ft.Column):
         self.calendar_ref = None
         self.ai_service = AIService()
         self.task_scheduler = TaskScheduler()  # ✅ НОВЫЙ ПЛАНИРОВЩИК
+        self.meal_nutrition_ai = MealNutritionAI()
         self.horizontal_alignment = ft.CrossAxisAlignment.END
         self.spacing = 10
         
@@ -513,6 +515,63 @@ class ChatWidget(ft.Column):
                         is_user=False
                     )
         
+            elif result.get("action") == "add_meal":
+                meal_name = result.get("meal_name", "")
+                day = result.get("day", "monday")
+                meal_type = result.get("meal_type", "lunch")
+                mode = result.get("mode", "direct")
+                
+                # ✅ DEBUG
+                print(f"[DEBUG add_meal] meal_name={meal_name}, day={day}, meal_type={meal_type}, mode={mode}")
+
+                if mode == "direct":
+                    # СПОСОБ 1: Прямое добавление с анализом БЖУ
+                    self.add_message(f"🔍 Analyzing nutrition for {meal_name}...", is_user=False)
+
+                    # Анализируем БЖУ через AI
+                    nutrition = self.meal_nutrition_ai.analyze_meal_nutrition(meal_name)
+                    
+                    # ✅ DEBUG
+                    print(f"[DEBUG nutrition] {nutrition}")
+
+                    # Обновляем сообщение с результатами
+                    self.add_message(
+                        f"✅ {nutrition['name']}\n"
+                        f"📊 {nutrition['calories']} kcal | "
+                        f"P: {nutrition['protein']}g | C: {nutrition['carbs']}g | F: {nutrition['fats']}g",
+                        is_user=False,
+                    )
+
+                    # Проверяем существующие блюда
+                    self.handle_meal_addition(nutrition, day, meal_type)
+                    return  # ✅ ИСПРАВЛЕНО: добавлен return
+
+                elif mode == "replace":
+                    # Сразу заменяем
+                    nutrition = self.meal_nutrition_ai.analyze_meal_nutrition(meal_name)
+                    self.replace_meal_and_add_to_calendar(nutrition, day, meal_type)
+                    return  # ✅ ИСПРАВЛЕНО: добавлен return
+
+            elif result.get("action") == "suggest_meals":
+                # СПОСОБ 2: Подбор блюд
+                criteria = result.get("criteria", {})
+
+                self.add_message("🔍 Finding meals that match your criteria...", is_user=False)
+
+                # Генерируем варианты
+                suggested_meals = self.meal_nutrition_ai.suggest_meals(criteria)
+
+                if not suggested_meals:
+                    self.add_message(
+                        "Sorry, I couldn't find matching meals. Try different criteria!",
+                        is_user=False,
+                    )
+                    return
+
+                # Показываем варианты пользователю
+                self.show_meal_suggestions(suggested_meals)
+                return  # ✅ ИСПРАВЛЕНО: добавлен return
+
         except Exception as e:
             print(f"Error in process_command: {e}")
             import traceback
@@ -526,3 +585,153 @@ class ChatWidget(ft.Column):
         """Обновляет календарь после изменений"""
         if self.on_refresh:
             self.on_refresh()
+
+    def handle_meal_addition(self, nutrition: dict, day: str, meal_type: str):
+        """Обрабатывает добавление блюда (проверяет существующие)"""
+        user_id = store.user_id
+        meal_plan = store.get_weekly_meal_plan(user_id)
+
+        if not meal_plan:
+            # Нет плана - просто добавляем в календарь
+            self.add_meal_to_calendar_with_nutrition(nutrition, day, meal_type)
+            return
+
+        existing_meal = meal_plan.get("plan", {}).get(day, {}).get(meal_type)
+
+        if existing_meal and existing_meal.get("name"):
+            # Есть блюдо - спрашиваем что делать
+            self.ask_meal_replacement(nutrition, day, meal_type, existing_meal)
+        else:
+            # Нет блюда - добавляем
+            self.replace_meal_and_add_to_calendar(nutrition, day, meal_type)
+
+    def show_meal_suggestions(self, meals: list):
+        """
+        Показывает варианты блюд для выбора.
+        Использует диалог выбора блюда.
+        """
+        # Сохраняем варианты во временное хранилище (если понадобится позже)
+        self.pending_meal_suggestions = meals
+
+        # Форматируем варианты для сообщения
+        message = "Here are some options:\n\n"
+        for i, meal in enumerate(meals):
+            message += f"{i+1}. **{meal['name']}**\n"
+            message += (
+                f"   {meal['calories']} kcal | "
+                f"P: {meal['protein']}g | C: {meal['carbs']}g | F: {meal['fats']}g\n\n"
+            )
+
+        message += "Choose a meal to add to your calendar:"
+
+        self.add_message(message, is_user=False)
+
+        # Открываем диалог выбора
+        from components.chat_meal_selection_dialog import ChatMealSelectionDialog
+
+        dialog = ChatMealSelectionDialog(
+            page=self.page_ref,
+            meals=meals,
+            on_select=self.handle_suggested_meal_selection,
+        )
+
+        self.page_ref.open(dialog)
+
+    def handle_suggested_meal_selection(self, selected_meal: dict, day: str, meal_type: str):
+        """Обрабатывает выбор блюда из предложенных"""
+        self.add_message(f"✅ You selected: {selected_meal['name']}", is_user=False)
+
+        # Идём по алгоритму добавления
+        self.handle_meal_addition(selected_meal, day, meal_type)
+
+    def ask_meal_replacement(self, new_meal: dict, day: str, meal_type: str, existing_meal: dict):
+        """Спрашивает: заменить или добавить дополнительно"""
+        from components.chat_meal_choice_dialog import ChatMealChoiceDialog
+
+        dialog = ChatMealChoiceDialog(
+            page=self.page_ref,
+            new_meal=new_meal,
+            day=day,
+            meal_type=meal_type,
+            existing_meal=existing_meal,
+            on_replace=lambda: self.replace_meal_and_add_to_calendar(new_meal, day, meal_type),
+            on_add_extra=lambda: self.add_meal_to_calendar_with_nutrition(new_meal, day, meal_type),
+        )
+
+        self.page_ref.open(dialog)
+
+    def replace_meal_and_add_to_calendar(self, nutrition: dict, day: str, meal_type: str):
+        """Заменяет блюдо в diet plan и добавляет в календарь"""
+        user_id = store.user_id
+
+        # Заменяем в diet plan
+        store.replace_meal_in_plan(user_id, day, meal_type, nutrition)
+
+        # Добавляем в календарь
+        self.add_meal_to_calendar_with_nutrition(nutrition, day, meal_type)
+
+        self.add_message(
+            f"✅ Replaced {day.capitalize()}'s {meal_type} with {nutrition['name']}!",
+            is_user=False,
+        )
+        self.refresh_calendar()
+
+    def add_meal_to_calendar_with_nutrition(self, nutrition: dict, day: str, meal_type: str):
+        """Добавляет блюдо в календарь (с БЖУ в описании)"""
+        import datetime
+        
+        # ✅ DEBUG
+        print(f"[DEBUG add_to_calendar] day={day}, meal_type={meal_type}")
+
+        days_map = {
+            "monday": 0,
+            "tuesday": 1,
+            "wednesday": 2,
+            "thursday": 3,
+            "friday": 4,
+            "saturday": 5,
+            "sunday": 6,
+        }
+
+        today = datetime.date.today()
+        monday = today - datetime.timedelta(days=today.weekday())
+        target_date = monday + datetime.timedelta(days=days_map.get(day, 0))
+        
+        # ✅ DEBUG
+        print(f"[DEBUG dates] today={today}, monday={monday}, target_date={target_date}")
+
+        times = {
+            "breakfast": ("08:00", "09:00"),
+            "lunch": ("12:00", "13:00"),
+            "dinner": ("18:00", "19:00"),
+            "snack": ("15:00", "15:30"),
+        }
+
+        start_time, end_time = times.get(meal_type, ("12:00", "13:00"))
+        
+        # ✅ DEBUG
+        print(f"[DEBUG time] start_time={start_time}, end_time={end_time}")
+
+        description = (
+            f"Meal: {meal_type}\n"
+            f"Calories: {nutrition['calories']} kcal\n"
+            f"Protein: {nutrition['protein']}g\n"
+            f"Carbs: {nutrition['carbs']}g\n"
+            f"Fats: {nutrition['fats']}g"
+        )
+
+        store.add_event(
+            title=nutrition["name"],
+            start_date=f"{target_date.strftime('%Y-%m-%d')} {start_time}",
+            end_date=f"{target_date.strftime('%Y-%m-%d')} {end_time}",
+            description=description,
+            event_type="event",
+            category="Food",
+        )
+
+        self.add_message(
+            f"✅ Added {nutrition['name']} to calendar\n"
+            f"📅 {day.capitalize()} at {start_time}",
+            is_user=False,
+        )
+        self.refresh_calendar()
