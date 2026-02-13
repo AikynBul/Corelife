@@ -189,44 +189,83 @@ class EventDialog(ft.AlertDialog):
                     [
                         # Заголовок
                         self.title_field,
-                        ft.Container(height=10),
+                        ft.Container(height=15),
                         
-                        # Дата и время
+                        # ✅ When - отдельный блок
                         ft.Container(
                             content=ft.Column([
-                                ft.Text("📅 When", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_700),
-                                ft.Container(height=5),
+                                ft.Row([
+                                    ft.Icon(ft.Icons.CALENDAR_TODAY, size=18, color=ft.Colors.BLUE_700),
+                                    ft.Text("When", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                                ], spacing=8),
+                                ft.Container(height=8),
                                 self.date_field,
-                                ft.Container(height=5),
+                                ft.Container(height=8),
                                 ft.Row([self.start_time_field, self.end_time_field], spacing=10),
                             ]),
                             padding=15,
                             border_radius=10,
                             bgcolor=ft.Colors.BLUE_50,
+                            border=ft.border.all(1, ft.Colors.BLUE_200),
                         ),
-                        ft.Container(height=10),
                         
-                        # Категория
-                        self.category_dropdown,
-                        ft.Container(height=10),
+                        ft.Container(height=15),
                         
-                        # Описание
+                        # ✅ Category + Priority рядом
+                        ft.Row([
+                            # Category
+                            ft.Container(
+                                content=ft.Column([
+                                    ft.Row([
+                                        ft.Icon(ft.Icons.LABEL, size=18, color=ft.Colors.PURPLE_700),
+                                        ft.Text("Category", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                                    ], spacing=8),
+                                    ft.Container(height=8),
+                                    self.category_dropdown,
+                                ]),
+                                padding=15,
+                                border_radius=10,
+                                bgcolor=ft.Colors.PURPLE_50,
+                                border=ft.border.all(1, ft.Colors.PURPLE_200),
+                                expand=True,
+                            ),
+                            
+                            ft.Container(width=10),
+                            
+                            # Priority
+                            ft.Container(
+                                content=ft.Column([
+                                    ft.Row([
+                                        ft.Icon(ft.Icons.FLAG, size=18, color=ft.Colors.ORANGE_700),
+                                        ft.Text("Priority", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                                    ], spacing=8),
+                                    ft.Container(height=8),
+                                    self.priority_dropdown,
+                                ]),
+                                padding=15,
+                                border_radius=10,
+                                bgcolor=ft.Colors.ORANGE_50,
+                                border=ft.border.all(1, ft.Colors.ORANGE_200),
+                                expand=True,
+                            ),
+                        ], spacing=0),
+                        
+                        ft.Container(height=15),
+                        
+                        # Description
                         self.description_field,
-                        ft.Container(height=10),
+                        ft.Container(height=15),
                         
-                        # Повтор
+                        # Repeat
                         self.recurrence_dropdown,
-                        ft.Container(height=10),
+                        ft.Container(height=15),
                         
-                        # Task & Priority
+                        # ✅ Task checkbox внизу
                         ft.Container(
-                            content=ft.Column([
-                                self.is_task_checkbox,
-                                self.priority_dropdown,
-                            ], spacing=10),
+                            content=self.is_task_checkbox,
                             padding=10,
                             border_radius=8,
-                            bgcolor=ft.Colors.ORANGE_50 if is_task_value else None,
+                            bgcolor=ft.Colors.GREY_50,
                         ),
                     ],
                     spacing=0,
@@ -260,13 +299,9 @@ class EventDialog(ft.AlertDialog):
         )
     
     def toggle_task_mode(self, e):
-        """Меняет цвет фона при переключении Task checkbox"""
-        # ✅ ИЗМЕНЕНО: Priority теперь всегда видимый, только меняем фон
-        
-        # Меняем цвет фона контейнера
-        parent = self.is_task_checkbox.parent.parent
-        parent.bgcolor = ft.Colors.ORANGE_50 if self.is_task_checkbox.value else None
-        parent.update()
+        """✅ УПРОЩЕНО: Task checkbox теперь просто переключатель"""
+        # Можно добавить дополнительную логику если нужно
+        pass
     
     def change_date(self, e):
         if not self.date_picker.value:

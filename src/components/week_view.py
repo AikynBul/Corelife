@@ -2,6 +2,111 @@ import flet as ft
 import datetime
 from data.store import store
 
+# ✅ НОВОЕ: Цвета для категорий (копия из calendar.py)
+CATEGORY_COLORS = {
+    "Routine": ft.Colors.GREY_600,
+    "Sleep": ft.Colors.INDIGO_400,
+    "Food": ft.Colors.ORANGE_600,
+    "Study": ft.Colors.BLUE_600,
+    "Exercise": ft.Colors.GREEN_600,
+    "Work": ft.Colors.BLUE_GREY_600,
+    "Social": ft.Colors.PINK_400,
+    "Health": ft.Colors.RED_600,
+    "Personal": ft.Colors.PURPLE_600,
+    "Entertainment": ft.Colors.CYAN_400,
+}
+
+def get_event_color(event: dict) -> str:
+    """Возвращает цвет события на основе категории"""
+    # Задачи всегда красные
+    if event.get("type") == "task":
+        return ft.Colors.RED_400
+    
+    # Получаем цвет по категории
+    category = event.get("category", "Personal")
+    return CATEGORY_COLORS.get(category, ft.Colors.BLUE_400)
+
+
+def group_overlapping_events(events: list) -> list:
+    """
+    Группирует пересекающиеся события для отображения рядом
+    
+    Returns:
+        list: Список событий с дополнительными полями:
+            - column: номер колонки (0, 1, 2...)
+            - total_columns: всего колонок в группе
+    """
+    # Сортируем по времени начала
+    sorted_events = sorted(events, key=lambda e: e.get("start", ""))
+    
+    # Результат
+    result = []
+    
+    for event in sorted_events:
+        # Парсим время события
+        try:
+            start_parts = event["start"].split(" ")
+            if len(start_parts) > 1:
+                time_parts = start_parts[1].split(":")
+                event_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+            else:
+                event_start_minutes = 0
+            
+            # Вычисляем конец
+            if "end" in event and " " in event["end"]:
+                end_parts = event["end"].split(" ")
+                if len(end_parts) > 1:
+                    time_parts = end_parts[1].split(":")
+                    event_end_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+                else:
+                    event_end_minutes = event_start_minutes + 60
+            else:
+                event_end_minutes = event_start_minutes + 60
+            
+            # Проверяем пересечения с уже размещёнными
+            column = 0
+            max_columns = 1
+            
+            for placed in result:
+                placed_start = placed["_start_minutes"]
+                placed_end = placed["_end_minutes"]
+                
+                # Проверяем пересечение
+                if not (event_end_minutes <= placed_start or event_start_minutes >= placed_end):
+                    # Есть пересечение
+                    if placed["column"] == column:
+                        column += 1
+                    
+                    if placed["total_columns"] > max_columns:
+                        max_columns = placed["total_columns"]
+            
+            # Сохраняем данные
+            event["column"] = column
+            event["total_columns"] = max(column + 1, max_columns)
+            event["_start_minutes"] = event_start_minutes
+            event["_end_minutes"] = event_end_minutes
+            
+            # Обновляем total_columns для пересекающихся
+            for placed in result:
+                placed_start = placed["_start_minutes"]
+                placed_end = placed["_end_minutes"]
+                
+                if not (event_end_minutes <= placed_start or event_start_minutes >= placed_end):
+                    placed["total_columns"] = max(placed["total_columns"], event["total_columns"])
+                    event["total_columns"] = max(placed["total_columns"], event["total_columns"])
+            
+            result.append(event)
+        
+        except Exception as ex:
+            print(f"Error grouping event {event.get('title')}: {ex}")
+            event["column"] = 0
+            event["total_columns"] = 1
+            event["_start_minutes"] = 0
+            event["_end_minutes"] = 60
+            result.append(event)
+    
+    return result
+
 class WeekView(ft.Column):
     def __init__(self):
         super().__init__()
@@ -145,7 +250,7 @@ class WeekView(ft.Column):
                     day_stack.controls.append(
                         ft.Container(
                             content=ft.Text(e["title"], size=10, color=ft.Colors.WHITE, no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS),
-                            bgcolor=ft.Colors.BLUE if e.get("type") != "task" else ft.Colors.RED_400,
+                            bgcolor=get_event_color(e),  # ✅ ИСПРАВЛЕНО: event → e
                             border_radius=4,
                             padding=2,
                             top=top,

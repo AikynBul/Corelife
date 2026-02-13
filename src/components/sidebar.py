@@ -31,9 +31,10 @@ class Sidebar(ft.Container):
                 ),
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.build_mini_calendar(),
-                ft.Divider(),
+                ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.build_my_calendars(),
-            ]
+            ],
+            scroll=ft.ScrollMode.AUTO,  # ✅ ДОБАВЛЕНО
         )
 
     def build_calendar_expansion(self):

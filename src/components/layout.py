@@ -19,8 +19,7 @@ class AppLayout(ft.Row):
         self.sidebar = ft.Container(
             content=Sidebar(
                 on_view_change=self.set_view,
-                on_filter_change=self.refresh_active_view,
-                on_date_click=self.go_to_day  # ✅ ДОБАВЛЕНО: callback для клика на дату
+                on_filter_change=self.refresh_active_view
             ),
             width=250,
             bgcolor=ft.Colors.SURFACE,
@@ -82,8 +81,12 @@ class AppLayout(ft.Row):
         self.filters = filters
         self.refresh_active_view()
 
-    def refresh_active_view(self):
+    def refresh_active_view(self, filters=None):
         """Обновляет текущий активный вид"""
+        # ✅ ИСПРАВЛЕНО: Принимаем filters и обновляем self.filters
+        if filters is not None:
+            self.filters = filters
+        
         # Re-render the current view
         if self.content_area.content == self.month_view:
             self.month_view.update_filter(self.filters) # This triggers render
