@@ -7,7 +7,7 @@ from datetime import datetime
 load_dotenv()
 
 class DietAIService:
-    """AI сервис для генерации планов питания через Groq API"""
+    """AI ÑÐµÑ€Ð²Ð¸Ñ Ð´Ð»Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ð¸ Ð¿Ð»Ð°Ð½Ð¾Ð² Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ Ñ‡ÐµÑ€ÐµÐ· Groq API"""
     
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
@@ -18,7 +18,7 @@ class DietAIService:
         
         self.client = Groq(api_key=api_key)
         
-        # Целевые калории по целям диеты
+        # Ð¦ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»ÑÐ¼ Ð´Ð¸ÐµÑ‚Ñ‹
         self.CALORIE_TARGETS = {
             "weight_loss": {"min": 1500, "max": 1700, "daily": 1600},
             "muscle_gain": {"min": 2500, "max": 2800, "daily": 2650},
@@ -27,11 +27,11 @@ class DietAIService:
         }
     
     def get_target_calories(self, goal):
-        """Возвращает целевые калории для цели"""
+        """Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ñ†ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð´Ð»Ñ Ñ†ÐµÐ»Ð¸"""
         return self.CALORIE_TARGETS.get(goal, {"daily": 2000})["daily"]
     
     def build_diet_prompt(self, preferences, target_calories, restrictions_text):
-        """Строит промпт для Groq API"""
+        """Ð¡Ñ‚Ñ€Ð¾Ð¸Ñ‚ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚ Ð´Ð»Ñ Groq API"""
         
         goal = preferences.get("diet_goal", "meal_planning")
         meal_types = preferences.get("meal_preference", [])
@@ -42,16 +42,16 @@ class DietAIService:
         avoid_foods = preferences.get("avoid_foods", [])
         meal_frequency = preferences.get("meal_frequency", "3")
         
-        # Форматируем типы питания
+        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ñ‚Ð¸Ð¿Ñ‹ Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ
         meal_type_text = ", ".join(meal_types) if meal_types else "balanced"
         
-        # Форматируем кухни
+        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ ÐºÑƒÑ…Ð½Ð¸
         cuisine_text = ", ".join(cuisines) if cuisines else "any cuisine"
         
-        # Форматируем продукты для избегания
+        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ñ‹ Ð´Ð»Ñ Ð¸Ð·Ð±ÐµÐ³Ð°Ð½Ð¸Ñ
         avoid_text = ", ".join(avoid_foods) if avoid_foods else "none"
         
-        # Определяем приёмы пищи
+        # ÐžÐ¿Ñ€ÐµÐ´ÐµÐ»ÑÐµÐ¼ Ð¿Ñ€Ð¸Ñ‘Ð¼Ñ‹ Ð¿Ð¸Ñ‰Ð¸
         meals_per_day = int(meal_frequency)
         meal_names = []
         if meals_per_day == 2:
@@ -61,7 +61,7 @@ class DietAIService:
         elif meals_per_day >= 4:
             meal_names = ["breakfast", "lunch", "snack", "dinner"]
         
-        # Специфичные рекомендации по цели
+        # Ð¡Ð¿ÐµÑ†Ð¸Ñ„Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»Ð¸
         goal_instructions = {
             "weight_loss": "Focus on low-calorie, high-protein meals. Include plenty of vegetables. Avoid sugary and fried foods.",
             "muscle_gain": "Focus on high-protein meals (chicken, fish, eggs, legumes). Include complex carbs (rice, pasta, potatoes).",
@@ -131,7 +131,7 @@ Each meal must have:
         return prompt
     
     def _format_meal_structure(self, meal_names):
-        """Форматирует структуру приёмов пищи для JSON"""
+        """Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñƒ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð¾Ð² Ð¿Ð¸Ñ‰Ð¸ Ð´Ð»Ñ JSON"""
         examples = {
             "breakfast": '"breakfast": {"name": "Oatmeal with berries", "calories": 350, "protein": 12, "carbs": 55, "fats": 8}',
             "lunch": '"lunch": {"name": "Grilled Chicken Salad", "calories": 450, "protein": 35, "carbs": 20, "fats": 15}',
@@ -142,11 +142,11 @@ Each meal must have:
         return ",\n    ".join([examples.get(meal, f'"{meal}": {{"name": "TBD", "calories": 0, "protein": 0, "carbs": 0, "fats": 0}}') for meal in meal_names])
     
     def format_restrictions_for_prompt(self, medical_notes):
-        """Форматирует медицинские ограничения для промпта"""
+        """Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ Ð´Ð»Ñ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚Ð°"""
         if not medical_notes or medical_notes.strip() == "":
             return "No medical restrictions."
         
-        # Попытка импортировать базу медицинских ограничений
+        # ÐŸÐ¾Ð¿Ñ‹Ñ‚ÐºÐ° Ð¸Ð¼Ð¿Ð¾Ñ€Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð±Ð°Ð·Ñƒ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ñ… Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ð¹
         try:
             from data.medical_restrictions import get_restrictions_for_conditions
             restrictions = get_restrictions_for_conditions(medical_notes)
@@ -155,37 +155,48 @@ Each meal must have:
         except ImportError:
             pass
         
-        # Если базы нет, просто возвращаем текст
+        # Ð•ÑÐ»Ð¸ Ð±Ð°Ð·Ñ‹ Ð½ÐµÑ‚, Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼ Ñ‚ÐµÐºÑÑ‚
         return f"User notes: {medical_notes}\nPlease avoid foods that may be harmful for these conditions."
     
-    def generate_weekly_plan(self, user_preferences, medical_notes=""):
+    def generate_weekly_plan(self, user_preferences, medical_notes="", available_ingredients=None):  # âœ… ÐÐžÐ’Ð«Ð™ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€
         """
-        Генерирует план питания на неделю через Groq API.
+        Ð“ÐµÐ½ÐµÑ€Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð»Ð°Ð½ Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ Ð½Ð° Ð½ÐµÐ´ÐµÐ»ÑŽ Ñ‡ÐµÑ€ÐµÐ· Groq API.
         
         Args:
-            user_preferences (dict): Предпочтения из diet_preferences
-            medical_notes (str): Медицинские ограничения
+            user_preferences (dict): ÐŸÑ€ÐµÐ´Ð¿Ð¾Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ð¸Ð· diet_preferences
+            medical_notes (str): ÐœÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
         
         Returns:
-            dict: План на 7 дней или None при ошибке
+            dict: ÐŸÐ»Ð°Ð½ Ð½Ð° 7 Ð´Ð½ÐµÐ¹ Ð¸Ð»Ð¸ None Ð¿Ñ€Ð¸ Ð¾ÑˆÐ¸Ð±ÐºÐµ
         """
         if not self.client:
             return None
         
         try:
-            # Получаем цель и калории
+            # ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ñ†ÐµÐ»ÑŒ Ð¸ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸
             goal = user_preferences.get("diet_goal", "meal_planning")
             target_calories = self.get_target_calories(goal)
             
-            # Форматируем медицинские ограничения
+            # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
             restrictions_text = self.format_restrictions_for_prompt(medical_notes)
             
-            # Строим промпт
+            # Ð¡Ñ‚Ñ€Ð¾Ð¸Ð¼ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚
             prompt = self.build_diet_prompt(user_preferences, target_calories, restrictions_text)
+            
+            # âœ… ÐÐžÐ’ÐžÐ•: ÐžÐ³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÐ¼ AI ÐºÑƒÐ¿Ð»ÐµÐ½Ð½Ñ‹Ð¼Ð¸ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð°Ð¼Ð¸ Ð¸Ð· Grocery Store
+            if available_ingredients:
+                ingredient_list = ", ".join(available_ingredients)
+                prompt += f"""
+
+IMPORTANT CONSTRAINT - USE ONLY AVAILABLE INGREDIENTS:
+The user has purchased these ingredients this week. You MUST create meals using combinations of these ingredients only:
+{ingredient_list}
+
+Do NOT suggest ingredients that are not in this list. Be creative with what's available."""
             
             print("Sending request to Groq API for meal plan generation...")
             
-            # Вызываем Groq API
+            # Ð’Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ Groq API
             chat_completion = self.client.chat.completions.create(
                 messages=[
                     {
@@ -198,13 +209,13 @@ Each meal must have:
                     }
                 ],
                 model="llama-3.3-70b-versatile",
-                temperature=0.8,  # Выше для креативности
-                max_tokens=2000,  # Больше для полного плана
+                temperature=0.8,  # Ð’Ñ‹ÑˆÐµ Ð´Ð»Ñ ÐºÑ€ÐµÐ°Ñ‚Ð¸Ð²Ð½Ð¾ÑÑ‚Ð¸
+                max_tokens=2000,  # Ð‘Ð¾Ð»ÑŒÑˆÐµ Ð´Ð»Ñ Ð¿Ð¾Ð»Ð½Ð¾Ð³Ð¾ Ð¿Ð»Ð°Ð½Ð°
             )
             
             response_text = chat_completion.choices[0].message.content.strip()
             
-            # Очищаем от markdown
+            # ÐžÑ‡Ð¸Ñ‰Ð°ÐµÐ¼ Ð¾Ñ‚ markdown
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
             if response_text.startswith("```"):
@@ -214,10 +225,10 @@ Each meal must have:
             
             response_text = response_text.strip()
             
-            # Парсим JSON
+            # ÐŸÐ°Ñ€ÑÐ¸Ð¼ JSON
             plan = json.loads(response_text)
             
-            print("✅ Meal plan generated successfully!")
+            print("âœ… Meal plan generated successfully!")
             
             return {
                 "goal": goal,
@@ -236,16 +247,16 @@ Each meal must have:
     
     def replace_meal(self, user_preferences, medical_notes, day, meal_type):
         """
-        Заменяет конкретное блюдо новым.
+        Ð—Ð°Ð¼ÐµÐ½ÑÐµÑ‚ ÐºÐ¾Ð½ÐºÑ€ÐµÑ‚Ð½Ð¾Ðµ Ð±Ð»ÑŽÐ´Ð¾ Ð½Ð¾Ð²Ñ‹Ð¼.
         
         Args:
-            user_preferences (dict): Предпочтения
-            medical_notes (str): Медицинские ограничения
-            day (str): День недели (monday, tuesday, ...)
-            meal_type (str): Тип приёма пищи (breakfast, lunch, dinner)
+            user_preferences (dict): ÐŸÑ€ÐµÐ´Ð¿Ð¾Ñ‡Ñ‚ÐµÐ½Ð¸Ñ
+            medical_notes (str): ÐœÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
+            day (str): Ð”ÐµÐ½ÑŒ Ð½ÐµÐ´ÐµÐ»Ð¸ (monday, tuesday, ...)
+            meal_type (str): Ð¢Ð¸Ð¿ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð° Ð¿Ð¸Ñ‰Ð¸ (breakfast, lunch, dinner)
         
         Returns:
-            dict: Новое блюдо или None
+            dict: ÐÐ¾Ð²Ð¾Ðµ Ð±Ð»ÑŽÐ´Ð¾ Ð¸Ð»Ð¸ None
         """
         if not self.client:
             return None
@@ -292,13 +303,13 @@ Return ONLY valid JSON (no markdown):
                     {"role": "user", "content": prompt}
                 ],
                 model="llama-3.3-70b-versatile",
-                temperature=0.9,  # Высокая креативность
+                temperature=0.9,  # Ð’Ñ‹ÑÐ¾ÐºÐ°Ñ ÐºÑ€ÐµÐ°Ñ‚Ð¸Ð²Ð½Ð¾ÑÑ‚ÑŒ
                 max_tokens=200,
             )
             
             response_text = chat_completion.choices[0].message.content.strip()
             
-            # Очистка
+            # ÐžÑ‡Ð¸ÑÑ‚ÐºÐ°
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
             if response_text.startswith("```"):

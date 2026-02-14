@@ -354,7 +354,7 @@ class DietQuizView(ft.Column):
                     content=ft.Text(f"You can select maximum {max_selections} options!"),
                     bgcolor=ft.Colors.ORANGE_400
                 )
-                self.page_ref.open(snack)
+                self.page_ref.overlay.append(snack); snack.open = True; self.page_ref.update()
         
         self.render_question()
     
@@ -442,7 +442,7 @@ class DietQuizView(ft.Column):
                 content=ft.Text("Please select at least one option!"),
                 bgcolor=ft.Colors.ORANGE_400
             )
-            self.page_ref.open(snack)
+            self.page_ref.overlay.append(snack); snack.open = True; self.page_ref.update()
             return
         
         # Если последний вопрос - сохраняем и завершаем
@@ -469,7 +469,7 @@ class DietQuizView(ft.Column):
                 content=ft.Text("✅ Diet preferences saved successfully!"),
                 bgcolor=ft.Colors.GREEN_400
             )
-            self.page_ref.open(snack)
+            self.page_ref.overlay.append(snack); snack.open = True; self.page_ref.update()
             
             # Вызываем callback
             if self.on_complete:
@@ -481,4 +481,4 @@ class DietQuizView(ft.Column):
                 content=ft.Text("❌ Failed to save preferences. Please try again."),
                 bgcolor=ft.Colors.RED_400
             )
-            self.page_ref.open(snack)
+            self.page_ref.overlay.append(snack); snack.open = True; self.page_ref.update()

@@ -482,14 +482,21 @@ class DietView(ft.Column):
             content=ft.Row(
                 controls=[
                     ft.Icon(ft.Icons.CALENDAR_VIEW_WEEK, size=24, color=ft.Colors.GREEN_600),
-                    ft.Text(
-                        "Weekly Meal Plan",
-                        size=22,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.GREEN_900
-                    ),
+                    ft.Column([
+                        ft.Text(
+                            "Weekly Meal Plan",
+                            size=22,
+                            weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.GREEN_900
+                        ),
+                        ft.Text(
+                            f"Week: {store.get_week_range()}",
+                            size=12,
+                            color=ft.Colors.GREY_600
+                        ),
+                    ], spacing=2),
                     ft.Container(expand=True),
-                    # ✅ НОВАЯ КНОПКА: Add All to Calendar
+                    # ✅ ИСПРАВЛЕНО: Не используем None в Row!
                     ft.OutlinedButton(
                         text="Add All to Calendar",
                         icon=ft.Icons.CALENDAR_TODAY,
@@ -497,7 +504,7 @@ class DietView(ft.Column):
                         style=ft.ButtonStyle(
                             color=ft.Colors.BLUE_600,
                         )
-                    ) if self.meal_plan else None,
+                    ) if self.meal_plan else ft.Container(width=0),  # ✅ FIX: Container вместо None
                     # Кнопка генерации
                     ft.ElevatedButton(
                         text="Generate Meal Plan",
@@ -814,10 +821,20 @@ class DietView(ft.Column):
         current_prefs = {**self.preferences, **self.temp_changes}
         medical_notes = current_prefs.get("medical_notes", "")
         
+        # ✅ НОВОЕ: Проверяем наличие купленных продуктов из Grocery Store
+        grocery_data = store.get_user_groceries(store.user_id)
+        available_ingredients = None
+        
+        if grocery_data and grocery_data.get("purchased") and grocery_data.get("cart"):
+            available_ingredients = [item["name"] for item in grocery_data["cart"]]
+            print(f"[Diet AI] Using purchased ingredients: {available_ingredients}")
+        
         # Генерируем план
         import asyncio
         loop = asyncio.get_running_loop()
-        new_plan = await loop.run_in_executor(None, diet_ai.generate_weekly_plan, current_prefs, medical_notes)
+        new_plan = await loop.run_in_executor(
+            None, diet_ai.generate_weekly_plan, current_prefs, medical_notes, available_ingredients
+        )
         
         if new_plan:
             # Сохраняем в БД
@@ -1007,9 +1024,11 @@ class DietView(ft.Column):
     def take_quiz(self, e):
         from components.diet_quiz_view import DietQuizView
         self.page_ref.clean()
+        self.page_ref.overlay.clear()  # ✅ ИСПРАВЛЕНО: Очищаем overlay
         
         def on_complete():
             self.page_ref.clean()
+            self.page_ref.overlay.clear()  # ✅ ИСПРАВЛЕНО: Очищаем overlay
             from components.layout import AppLayout
             from components.header import Header
             from components.chat import ChatWidget

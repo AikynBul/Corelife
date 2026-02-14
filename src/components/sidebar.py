@@ -25,6 +25,11 @@ class Sidebar(ft.Container):
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.calendar_expansion,  # ✅ ИЗМЕНЕНО: вместо build_view_switcher()
                 ft.TextButton(
+                    "🛒 Grocery Store",
+                    on_click=lambda e: self.on_view_change("Grocery") if self.on_view_change else None,
+                    icon=ft.Icons.SHOPPING_CART
+                ),
+                ft.TextButton(
                     translations.get("diet_view"), 
                     on_click=lambda e: self.on_view_change("Diet") if self.on_view_change else None, 
                     icon=ft.Icons.RESTAURANT_MENU

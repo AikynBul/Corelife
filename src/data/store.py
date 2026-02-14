@@ -1,9 +1,15 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def get_monday_of_week(date):
+    """Возвращает понедельник текущей недели"""
+    return date - timedelta(days=date.weekday())
+
 
 class EventStore:
     def __init__(self):
@@ -468,6 +474,186 @@ class EventStore:
             
         except Exception as e:
             print(f"Error deleting meal plan: {e}")
+            return False
+            
+    # ============= GROCERY STORE METHODS =============
+
+    def set_user_budget(self, user_id, budget):
+        """Установить недельный бюджет на продукты"""
+        if self.db is None:
+            return False
+        
+        week_start = get_monday_of_week(datetime.now().date())
+        week_start_str = week_start.strftime("%Y-%m-%d")
+        
+        try:
+            self.db.grocery_budgets.update_one(
+                {"user_id": user_id, "week_start": week_start_str},
+                {"$set": {
+                    "user_id": user_id,
+                    "week_start": week_start_str,
+                    "weekly_budget": budget,
+                    "spent": 0,
+                    "remaining": budget,
+                    "subtotal": 0,
+                    "cart": [],
+                    "purchased": False,
+                    "purchased_at": None,
+                    "created_at": datetime.now()
+                }},
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            print(f"Error setting budget: {e}")
+            return False
+
+    def get_user_groceries(self, user_id):
+        """Получить данные о продуктах текущей недели"""
+        if self.db is None:
+            return None
+        
+        week_start = get_monday_of_week(datetime.now().date())
+        week_start_str = week_start.strftime("%Y-%m-%d")
+        
+        return self.db.grocery_budgets.find_one({
+            "user_id": user_id,
+            "week_start": week_start_str
+        })
+
+    def update_cart(self, user_id, cart):
+        """Обновить корзину покупок"""
+        if self.db is None:
+            return False
+        
+        week_start = get_monday_of_week(datetime.now().date())
+        week_start_str = week_start.strftime("%Y-%m-%d")
+        
+        # Рассчитываем subtotal
+        subtotal = sum(item.get("total", 0) for item in cart)
+        
+        try:
+            self.db.grocery_budgets.update_one(
+                {"user_id": user_id, "week_start": week_start_str},
+                {"$set": {
+                    "cart": cart,
+                    "subtotal": subtotal
+                }}
+            )
+            return True
+        except Exception as e:
+            print(f"Error updating cart: {e}")
+            return False
+
+    def confirm_purchase(self, user_id):
+        """Подтвердить покупку и списать бюджет"""
+        if self.db is None:
+            return False
+        
+        grocery = self.get_user_groceries(user_id)
+        
+        if not grocery:
+            return False
+        
+        subtotal = grocery.get("subtotal", 0)
+        budget = grocery.get("weekly_budget", 0)
+        
+        try:
+            self.db.grocery_budgets.update_one(
+                {"_id": grocery["_id"]},
+                {"$set": {
+                    "spent": subtotal,
+                    "remaining": budget - subtotal,
+                    "purchased": True,
+                    "purchased_at": datetime.now()
+                }}
+            )
+            return True
+        except Exception as e:
+            print(f"Error confirming purchase: {e}")
+            return False
+
+    def get_week_range(self):
+        """Возвращает диапазон текущей недели (Monday-Sunday)"""
+        today = datetime.now().date()
+        monday = get_monday_of_week(today)
+        sunday = monday + timedelta(days=6)
+        
+        # Форматируем: "Feb 10-16"
+        if monday.month == sunday.month:
+            return f"{monday.strftime('%b %d')}-{sunday.day}"
+        else:
+            return f"{monday.strftime('%b %d')}-{sunday.strftime('%b %d')}"
+    
+    def initialize_starter_inventory(self, user_id):
+        """Дать пользователю стартовый инвентарь ВСЕХ продуктов"""
+        from data.products import PRODUCTS
+        
+        if self.db is None:
+            return False
+        
+        week_start = get_monday_of_week(datetime.now().date())
+        week_start_str = week_start.strftime("%Y-%m-%d")
+        
+        # Собираем ВСЕ продукты
+        starter_items = []
+        
+        for category, products in PRODUCTS.items():
+            for product in products:
+                # Даём по 10 единиц каждого продукта
+                starter_items.append({
+                    "product_id": product["id"],
+                    "name": product["name"],
+                    "quantity": 10,
+                    "unit": product["unit"],
+                    "price_per_unit": 0,
+                    "total": 0,
+                })
+        
+        total_spent = sum(item["total"] for item in starter_items)
+        
+        try:
+            self.db.grocery_budgets.update_one(
+                {"user_id": user_id, "week_start": week_start_str},
+                {"$set": {
+                    "user_id": user_id,
+                    "week_start": week_start_str,
+                    "weekly_budget": 99999999,
+                    "spent": total_spent,
+                    "remaining": 99999999,
+                    "subtotal": 0,
+                    "cart": starter_items,
+                    "purchased": True,
+                    "purchased_at": datetime.now(),
+                    "created_at": datetime.now()
+                }},
+                upsert=True
+            )
+            print(f"✅ Starter inventory created: {len(starter_items)} items")
+            return True
+        except Exception as e:
+            print(f"Error creating starter inventory: {e}")
+            return False
+    
+    def update_purchased_items(self, user_id, cart_items, spent):
+        """Обновить список купленных товаров"""
+        if self.db is None:
+            return False
+        
+        week_start = get_monday_of_week(datetime.now().date())
+        week_start_str = week_start.strftime("%Y-%m-%d")
+        
+        try:
+            self.db.grocery_budgets.update_one(
+                {"user_id": user_id, "week_start": week_start_str},
+                {"$set": {
+                    "cart": cart_items,
+                    "spent": spent,
+                }}
+            )
+            return True
+        except Exception as e:
+            print(f"Error updating purchased items: {e}")
             return False
 
 # Global instance
