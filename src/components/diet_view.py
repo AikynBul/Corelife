@@ -797,6 +797,26 @@ class DietView(ft.Column):
     
     def generate_meal_plan(self, e):
         """✅ НОВОЕ: Генерирует план питания через AI"""
+        # CREDITS: 100 кредитов за генерацию плана (каждый раз)
+        _uid = store.user_id
+        if _uid:
+            _balance = store.get_credits(_uid)
+            if _balance < 100:
+                self.page_ref.open(ft.SnackBar(
+                    content=ft.Text(
+                        f"⚠️ Not enough credits! You have {_balance} cr. "
+                        "Diet plan generation costs 100 cr."
+                    ),
+                    bgcolor=ft.Colors.RED_400, duration=4000,
+                ))
+                return
+            store.spend_credits(_uid, 100, reason="Generate Diet Plan")
+            try:
+                if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                    self.page_ref.appbar.refresh_credits()
+            except Exception:
+                pass
+
         # Показываем индикатор загрузки
         loading_snack = ft.SnackBar(
             content=ft.Row([
@@ -821,13 +841,96 @@ class DietView(ft.Column):
         current_prefs = {**self.preferences, **self.temp_changes}
         medical_notes = current_prefs.get("medical_notes", "")
         
-        # ✅ НОВОЕ: Проверяем наличие купленных продуктов из Grocery Store
-        grocery_data = store.get_user_groceries(store.user_id)
-        available_ingredients = None
+        # Проверяем настройку "связать диету с магазином"
+        link_enabled = False
+        try:
+            _val = self.page_ref.client_storage.get("link_diet_grocery")
+            # client_storage может вернуть bool, строку "true"/"false", или None
+            if isinstance(_val, bool):
+                link_enabled = _val
+            elif isinstance(_val, str):
+                link_enabled = _val.lower() in ("true", "1", "yes")
+            else:
+                link_enabled = bool(_val)
+            print(f"[Diet] link_diet_grocery = {link_enabled!r} (raw={_val!r})")
+        except Exception as _ex:
+            print(f"[Diet] client_storage error: {_ex}")
+            link_enabled = False
         
-        if grocery_data and grocery_data.get("purchased") and grocery_data.get("cart"):
-            available_ingredients = [item["name"] for item in grocery_data["cart"]]
-            print(f"[Diet AI] Using purchased ingredients: {available_ingredients}")
+        available_ingredients = None  # None = AI генерирует свободно
+        
+        if link_enabled:
+            # Используем self.user_info["id"] как надёжный fallback
+            _uid_for_grocery = store.user_id or self.user_info.get("id")
+            grocery_data = store.get_user_groceries(_uid_for_grocery)
+            print(f"[Diet] Fetching groceries for uid={_uid_for_grocery}, data={grocery_data is not None}")
+            purchased_items = []
+            if grocery_data:
+                # Читаем из purchased_cart (основное поле после покупки)
+                purchased_items = grocery_data.get("purchased_cart", [])
+                if not purchased_items:
+                    purchased_items = grocery_data.get("cart", [])
+            
+            if not purchased_items:
+                # Продуктов нет — возвращаем кредиты и показываем ошибку
+                _uid = store.user_id
+                if _uid:
+                    store.add_credits(_uid, 100, reason="Refund: no groceries for diet plan")
+                    try:
+                        if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                            self.page_ref.appbar.refresh_credits()
+                    except Exception:
+                        pass
+                self.page_ref.open(ft.SnackBar(
+                    content=ft.Text(
+                        "🛒 No purchased groceries found! "
+                        "Please buy groceries first, or turn OFF "
+                        "'Link diet to grocery' in Settings."
+                    ),
+                    bgcolor=ft.Colors.ORANGE_600, duration=6000,
+                ))
+                return
+            
+            available_ingredients = [item["name"] for item in purchased_items]
+            print(f"[Diet AI] Link ON — using {len(available_ingredients)} purchased ingredients")
+            
+            # Проверяем минимальное количество продуктов для цели диеты
+            diet_goal = current_prefs.get("diet_goal", "meal_planning")
+            # Минимальные требования: muscle_gain нужно больше всего (белок+углеводы+жиры)
+            min_required = {
+                "muscle_gain": 6,       # белок, углеводы, жиры, овощи — нужно разнообразие
+                "weight_loss": 5,       # белок + овощи + злаки
+                "healthy_lifestyle": 4, # базовое разнообразие
+                "meal_planning": 3,     # минимум
+            }
+            required = min_required.get(diet_goal, 4)
+            
+            if len(available_ingredients) < required:
+                _uid = store.user_id
+                if _uid:
+                    store.add_credits(_uid, 100, reason="Refund: insufficient groceries for diet")
+                    try:
+                        if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                            self.page_ref.appbar.refresh_credits()
+                    except Exception:
+                        pass
+                goal_labels = {
+                    "muscle_gain": "Muscle Gain",
+                    "weight_loss": "Weight Loss",
+                    "healthy_lifestyle": "Healthy Lifestyle",
+                    "meal_planning": "Meal Planning",
+                }
+                goal_name = goal_labels.get(diet_goal, diet_goal)
+                self.page_ref.open(ft.SnackBar(
+                    content=ft.Text(
+                        f"🛒 Not enough groceries for '{goal_name}'! "
+                        f"You have {len(available_ingredients)} items, "
+                        f"need at least {required}. "
+                        "Buy more products or turn OFF the diet-grocery link in Settings."
+                    ),
+                    bgcolor=ft.Colors.ORANGE_600, duration=7000,
+                ))
+                return
         
         # Генерируем план
         import asyncio
@@ -864,6 +967,26 @@ class DietView(ft.Column):
     
     def replace_meal(self, day, meal_type):
         """✅ НОВОЕ: Заменяет конкретное блюдо"""
+        # CREDITS: 15 кредитов за замену блюда
+        _uid = store.user_id
+        if _uid:
+            _balance = store.get_credits(_uid)
+            if _balance < 15:
+                self.page_ref.open(ft.SnackBar(
+                    content=ft.Text(
+                        f"⚠️ Not enough credits! You have {_balance} cr. "
+                        "Replacing a meal costs 15 cr."
+                    ),
+                    bgcolor=ft.Colors.RED_400, duration=4000,
+                ))
+                return
+            store.spend_credits(_uid, 15, reason="Replace meal")
+            try:
+                if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                    self.page_ref.appbar.refresh_credits()
+            except Exception:
+                pass
+
         loading_snack = ft.SnackBar(
             content=ft.Row([
                 ft.ProgressRing(width=16, height=16, stroke_width=2),

@@ -2,15 +2,20 @@ import flet as ft
 from data.store import store
 from data.products import PRODUCTS, CATEGORIES
 from components.budget_dialog import BudgetDialog
+from utils.translations import translations  # ✅ ПРАВИЛЬНЫЙ путь
 
 class GroceryStore(ft.Container):
     """Страница продуктового магазина с бюджетом и корзиной"""
     
-    def __init__(self, page: ft.Page, user_info: dict, on_refresh=None):
+    def __init__(self, page: ft.Page, user_info: dict, on_refresh=None,
+                 on_panel_show=None, on_panel_hide=None):
         super().__init__()
         self.page_ref = page
         self.user_info = user_info
-        self.on_refresh = on_refresh  # ✅ НОВОЕ: callback для обновления
+        self.on_refresh = on_refresh
+        # Callbacks для поднятия/опускания chat FAB при появлении нижней панели
+        self.on_panel_show = on_panel_show
+        self.on_panel_hide = on_panel_hide
         self.expand = True
         self.padding = 20
         
@@ -29,9 +34,9 @@ class GroceryStore(ft.Container):
         
         self.build_ui()
         
-        # ✅ НОВОЕ: Показываем bottom panel если корзина не пустая
-        if self.cart:
-            self.page_ref.run_task(self.show_bottom_panel_async)
+        # ✅ ИСПРАВЛЕНО: Показываем bottom panel только если в shop mode И корзина не пустая
+        # НО НЕ показываем при инициализации, только при переключении на Grocery
+        # (панель будет показана в layout.py при set_view("Grocery"))
     
     async def show_bottom_panel_async(self):
         """Показать bottom panel асинхронно после инициализации"""
@@ -46,14 +51,9 @@ class GroceryStore(ft.Container):
         self.show_budget_dialog()
     
     def load_grocery_data(self):
-        """Загрузить данные о бюджете и корзине из БД"""
+        """Загрузить данные о бюджете и текущей корзине из БД."""
         self.grocery_data = store.get_user_groceries(self.user_info["id"])
-        
-        # ✅ НОВОЕ: Если данных нет - создаём стартовый инвентарь
-        if not self.grocery_data:
-            print("No grocery data found - creating starter inventory...")
-            store.initialize_starter_inventory(self.user_info["id"])
-            self.grocery_data = store.get_user_groceries(self.user_info["id"])
+        # initialize_starter_inventory убрана — она перезаписывала purchased_cart
         
         if self.grocery_data:
             # Загружаем корзину
@@ -100,10 +100,10 @@ class GroceryStore(ft.Container):
             content=ft.Row([
                 ft.Container(
                     content=ft.Text(
-                        "🛍️ Shop",
+                        f"🛍️ {translations.get('shop')}",  # ✅ Перевод
                         size=16,
                         weight=ft.FontWeight.BOLD if self.view_mode == "shop" else ft.FontWeight.NORMAL,
-                        color=ft.Colors.BLUE_600 if self.view_mode == "shop" else ft.Colors.GREY_600,
+                        color=ft.Colors.BLUE_600 if self.view_mode == "shop" else None,  # ✅ Theme-aware
                     ),
                     padding=15,
                     border_radius=8,
@@ -114,10 +114,10 @@ class GroceryStore(ft.Container):
                 ft.Container(width=10),
                 ft.Container(
                     content=ft.Text(
-                        "📦 Purchased Items",
+                        f"📦 {translations.get('purchased_items')}",  # ✅ Перевод
                         size=16,
                         weight=ft.FontWeight.BOLD if self.view_mode == "purchased" else ft.FontWeight.NORMAL,
-                        color=ft.Colors.GREEN_600 if self.view_mode == "purchased" else ft.Colors.GREY_600,
+                        color=ft.Colors.GREEN_600 if self.view_mode == "purchased" else None,  # ✅ Theme-aware
                     ),
                     padding=15,
                     border_radius=8,
@@ -141,17 +141,28 @@ class GroceryStore(ft.Container):
         if not self.grocery_data or not self.grocery_data.get("purchased"):
             return ft.Container(
                 content=ft.Column([
-                    ft.Icon(ft.Icons.SHOPPING_BAG_OUTLINED, size=64, color=ft.Colors.GREY_400),
-                    ft.Text("No purchases yet", size=18, color=ft.Colors.GREY_600),
-                    ft.Text("Buy groceries first!", size=14, color=ft.Colors.GREY_500),
+                    ft.Icon(ft.Icons.SHOPPING_BAG_OUTLINED, size=64),  # ✅ Убран color
+                    ft.Text(translations.get("no_purchases"), size=18),  # ✅ Перевод + убран color
+                    ft.Text(translations.get("buy_groceries_first"), size=14),  # ✅ Перевод + убран color
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                 padding=50,
                 alignment=ft.alignment.center,
                 expand=True,
             )
         
-        # Показываем купленные товары
-        cart_items = self.grocery_data.get("cart", [])
+        # ИСПРАВЛЕНО: читаем из purchased_cart (cart очищается после покупки)
+        cart_items = self.grocery_data.get("purchased_cart", [])
+        if not cart_items:
+            cart_items = self.grocery_data.get("cart", [])  # fallback для старых записей
+        if not cart_items:
+            return ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.SHOPPING_BAG_OUTLINED, size=64),
+                    ft.Text(translations.get("no_purchases"), size=18),
+                    ft.Text(translations.get("buy_groceries_first"), size=14),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                padding=50, alignment=ft.alignment.center, expand=True,
+            )
         
         items_list = []
         for item in cart_items:
@@ -159,7 +170,7 @@ class GroceryStore(ft.Container):
                 content=ft.Row([
                     ft.Text(item.get("name", "Unknown"), size=16, weight=ft.FontWeight.BOLD, expand=True),
                     ft.Column([
-                        ft.Text(f"{item.get('quantity', 0)} {item.get('unit', '')}", size=14, color=ft.Colors.GREY_600),
+                        ft.Text(f"{item.get('quantity', 0)} {item.get('unit', '')}", size=14),  # ✅ Убран color
                         ft.Text(f"{item.get('total', 0):,} ₸", size=14, color=ft.Colors.BLUE_600, weight=ft.FontWeight.BOLD),
                     ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=2),
                     # ✅ НОВОЕ: Кнопка удаления
@@ -167,14 +178,14 @@ class GroceryStore(ft.Container):
                         icon=ft.Icons.DELETE_OUTLINE,
                         icon_color=ft.Colors.RED_400,
                         icon_size=20,
-                        tooltip="Remove item",
+                        tooltip=translations.get("remove"),  # ✅ Перевод
                         on_click=lambda _, product_id=item.get("product_id"): self.remove_purchased_item(product_id),
                     ),
                 ]),
                 padding=15,
                 border_radius=8,
-                border=ft.border.all(1, ft.Colors.GREY_300),
-                bgcolor=ft.Colors.WHITE,
+                border=ft.border.all(1, ft.Colors.OUTLINE),  # ✅ Тёмная тема
+                bgcolor=None,  # ✅ Тёмная тема
             )
             items_list.append(item_card)
         
@@ -182,7 +193,7 @@ class GroceryStore(ft.Container):
         total = self.grocery_data.get("spent", 0)
         summary = ft.Container(
             content=ft.Row([
-                ft.Text("Total Spent:", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(f"{translations.get('total_spent')}:", size=18, weight=ft.FontWeight.BOLD),  # ✅ Перевод
                 ft.Text(f"{total:,} ₸", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_600),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             padding=20,
@@ -206,8 +217,10 @@ class GroceryStore(ft.Container):
         if not self.grocery_data:
             return
         
-        # Получаем текущую корзину
-        cart_items = self.grocery_data.get("cart", [])
+        # ИСПРАВЛЕНО: читаем из purchased_cart
+        cart_items = self.grocery_data.get("purchased_cart", [])
+        if not cart_items:
+            cart_items = self.grocery_data.get("cart", [])
         
         # Удаляем товар
         cart_items = [item for item in cart_items if item.get("product_id") != product_id]
@@ -503,15 +516,18 @@ class GroceryStore(ft.Container):
         self.update_products_display()
     
     def update_products_display(self):
-        """✅ НОВОЕ: Обновить только products grid без scroll jump"""
-        # Находим и обновляем только products section
-        if self.view_mode == "shop" and len(self.content.controls) > 5:
-            # content.controls[5] = products grid
-            products_grid = self.build_products_grid()
-            self.content.controls[5] = products_grid
-            self.content.update()
-        
-        # Обновляем bottom panel
+        """Обновить только products grid (Stack->Column->controls[5])."""
+        if self.view_mode != "shop":
+            return
+        try:
+            # self.content = Stack, controls[0] = main Column
+            main_col = self.content.controls[0]
+            main_col.controls[5] = self.build_products_grid()
+            main_col.update()
+        except Exception as ex:
+            print(f"[GroceryStore] update_products_display fallback: {ex}")
+            self.build_ui()
+            self.update()
         self.build_bottom_panel()
     
     def add_to_cart(self, product):
@@ -709,6 +725,9 @@ class GroceryStore(ft.Container):
         
         self.page_ref.overlay.append(panel)
         self.page_ref.update()
+        # Уведомляем layout — нужно поднять chat FAB
+        if self.on_panel_show:
+            self.on_panel_show()
     
     def clear_bottom_panel(self):
         """✅ НОВОЕ: Удалить bottom panel из overlay"""
@@ -721,17 +740,26 @@ class GroceryStore(ft.Container):
         for item in to_remove:
             self.page_ref.overlay.remove(item)
         
-        # ✅ КРИТИЧНО: Обновляем page после удаления
         if to_remove:
             print(f"CLEAR_BOTTOM_PANEL: Removed {len(to_remove)} panels")
             self.page_ref.update()
     
     def clear_cart(self):
-        """✅ НОВОЕ: Очистить корзину"""
+        """Очистить текущую корзину. Купленные товары (purchased_cart) не трогаем."""
         self.cart = {}
         self.save_cart()
-        if self.on_refresh:
-            self.on_refresh()
+        self.clear_bottom_panel()
+        # Уведомляем layout о поднятии FAB обратно
+        if self.on_panel_hide:
+            self.on_panel_hide()
+        # Обновляем только grid продуктов
+        try:
+            main_col = self.content.controls[0]
+            main_col.controls[5] = self.build_products_grid()
+            main_col.update()
+        except Exception:
+            if self.on_refresh:
+                self.on_refresh()
     
     def build_cart_button(self):
         """Построить floating кнопку корзины"""
@@ -776,20 +804,14 @@ class GroceryStore(ft.Container):
         self.page_ref.open(panel)
     
     def on_purchase_complete(self):
-        """✅ НОВОЕ: Callback после завершения покупки"""
-        print("ON_PURCHASE_COMPLETE: Refreshing grocery store...")
-        
-        # 1. Очищаем корзину
+        """Callback после покупки: убираем панель, переключаемся на Purchased."""
+        print("[GroceryStore] on_purchase_complete")
         self.cart = {}
-        
-        # 2. Перезагружаем данные из БД (там уже есть purchased items)
+        self.clear_bottom_panel()
+        # Уведомляем layout — FAB возвращается вниз
+        if self.on_panel_hide:
+            self.on_panel_hide()
         self.load_grocery_data()
-        
-        # 3. Переключаемся на Purchased Items
         self.view_mode = "purchased"
-        
-        # 4. Перестраиваем UI
         self.build_ui()
-        
-        # 5. Обновляем display
-        self.update()
+        self.update()   

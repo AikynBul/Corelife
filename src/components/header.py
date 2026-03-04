@@ -1,38 +1,66 @@
 import flet as ft
+from data.store import store
+
 
 class Header(ft.AppBar):
-    def __init__(self, page: ft.Page, on_account_click, on_language_change=None, on_menu_click=None, on_theme_change=None):
+    def __init__(self, page: ft.Page, on_account_click, on_language_change=None,
+                 on_menu_click=None, on_theme_change=None, user_info=None):
         super().__init__()
         self.page_ref = page
         self.on_account_click = on_account_click
         self.on_language_change = on_language_change
         self.on_theme_change = on_theme_change
+        self.user_info = user_info or {}
         self.leading = ft.IconButton(ft.Icons.MENU, on_click=on_menu_click)
         self.leading_width = 40
-        self.title = ft.Text("Corelife", weight=ft.FontWeight.BOLD, size=22)  # ✅ Изменено с Calendar на Corelife
+        self.title = ft.Text("Corelife", weight=ft.FontWeight.BOLD, size=22)
         self.center_title = False
         self.bgcolor = ft.Colors.SURFACE
-        
-        # Создаем кнопку темы и сохраняем ссылку ✅
+
         self.theme_button = ft.IconButton(
             icon=ft.Icons.DARK_MODE_OUTLINED,
             selected_icon=ft.Icons.LIGHT_MODE_OUTLINED,
             on_click=self.toggle_theme,
             tooltip="Toggle Theme"
         )
-        
+
+        # Credits badge — слева от Search
+        self._credits_text = ft.Text(
+            self._get_credits_str(),
+            size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.AMBER_800,
+        )
+        self._credits_badge = ft.Container(
+            content=ft.Row([
+                ft.Icon(ft.Icons.STARS_ROUNDED, color=ft.Colors.AMBER_600, size=16),
+                self._credits_text,
+            ], spacing=3, tight=True),
+            padding=ft.padding.symmetric(horizontal=10, vertical=5),
+            border_radius=20,
+            bgcolor=ft.Colors.AMBER_50,
+            border=ft.border.all(1, ft.Colors.AMBER_300),
+            tooltip="Your credits. Click for details.",
+            on_click=self._show_credits_dialog,
+            ink=True,
+        )
+
         self.actions = [
+            self._credits_badge,
+            ft.Container(width=4),
             ft.IconButton(ft.Icons.SEARCH, on_click=self.show_search, tooltip="Search"),
             ft.IconButton(ft.Icons.HELP_OUTLINE, on_click=self.show_help, tooltip="Help"),
-            self.theme_button,  # ✅ Используем сохраненную ссылку
+            self.theme_button,
             ft.IconButton(ft.Icons.SETTINGS, on_click=self.show_settings, tooltip="Settings"),
             ft.Container(width=10),
             ft.GestureDetector(
                 on_tap=self.on_account_tap,
                 content=ft.CircleAvatar(
-                    content=ft.Text("A"),
+                    content=ft.Text(
+                        (self.user_info.get("name") or "?")[0].upper(),
+                        size=14,
+                        weight=ft.FontWeight.BOLD,
+                    ),
                     bgcolor=ft.Colors.BLUE_200,
-                    radius=16
+                    radius=16,
                 )
             ),
             ft.Container(width=10),
@@ -170,6 +198,132 @@ class Header(ft.AppBar):
         )
         self.page_ref.open(dialog)
 
+    # ── Credits ──────────────────────────────────────────────────
+
+    def _get_credits_str(self):
+        try:
+            if store.user_id:
+                return f"{store.get_credits(store.user_id)} cr"
+        except Exception:
+            pass
+        return "— cr"
+
+    def refresh_credits(self):
+        """Вызывается после трат — обновляет badge в шапке."""
+        try:
+            self._credits_text.value = self._get_credits_str()
+            self._credits_text.update()
+        except Exception:
+            pass
+
+    def _show_credits_dialog(self, e):
+        user_id = store.user_id
+        if not user_id:
+            return
+        credits = store.get_credits(user_id)
+        history = store.get_credits_history(user_id, limit=10)
+
+        cost_rows = [
+            ft.Row([ft.Text(label, size=12, expand=True),
+                    ft.Text(f"{cost} cr", size=12, weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.BLUE_700)], spacing=10)
+            for label, cost in [
+                ("💬 AI Chat message", 10), ("🍽️ AI Meal suggestion", 20),
+                ("📋 Generate Diet Plan", 100), ("🔄 Replace a meal", 15),
+            ]
+        ]
+        history_rows = []
+        for item in history:
+            amt = item.get("amount", 0)
+            sign = "+" if amt > 0 else ""
+            color = ft.Colors.GREEN_700 if amt > 0 else ft.Colors.RED_700
+            ts = item.get("created_at", "")
+            if hasattr(ts, "strftime"):
+                ts = ts.strftime("%b %d %H:%M")
+            history_rows.append(ft.Row([
+                ft.Text(item.get("reason", ""), size=11, expand=True,
+                        color=ft.Colors.GREY_700, max_lines=1,
+                        overflow=ft.TextOverflow.ELLIPSIS),
+                ft.Text(f"{sign}{amt} cr", size=11,
+                        weight=ft.FontWeight.BOLD, color=color),
+            ], spacing=8))
+
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.STARS_ROUNDED, color=ft.Colors.AMBER_600, size=26),
+                ft.Text("Credits", size=20, weight=ft.FontWeight.BOLD),
+            ], spacing=10),
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("Your balance", size=12, color=ft.Colors.GREY_600),
+                            ft.Text(f"{credits} credits", size=30,
+                                    weight=ft.FontWeight.BOLD, color=ft.Colors.AMBER_700),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
+                        padding=20, border_radius=12, bgcolor=ft.Colors.AMBER_50,
+                        border=ft.border.all(2, ft.Colors.AMBER_200),
+                        alignment=ft.alignment.center,
+                    ),
+                    ft.Container(height=12),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([ft.Icon(ft.Icons.INFO_OUTLINE, size=15,
+                                            color=ft.Colors.BLUE_600),
+                                    ft.Text("What costs credits", size=13,
+                                            weight=ft.FontWeight.BOLD)], spacing=6),
+                            ft.Container(height=4),
+                            *cost_rows,
+                            ft.Container(height=4),
+                            ft.Text("✅ Free: events, tasks, calendar, grocery store",
+                                    size=11, color=ft.Colors.GREEN_700, italic=True),
+                        ], spacing=4),
+                        padding=14, border_radius=10,
+                        bgcolor=ft.Colors.BLUE_50,
+                        border=ft.border.all(1, ft.Colors.BLUE_200),
+                    ),
+                    ft.Container(height=12),
+                    ft.Text("Recent activity", size=13, weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.GREY_700),
+                    ft.Container(
+                        content=ft.Column(
+                            history_rows if history_rows
+                            else [ft.Text("No activity yet", size=12,
+                                          color=ft.Colors.GREY_500)],
+                            spacing=5,
+                        ),
+                        padding=12, border_radius=8,
+                        bgcolor=ft.Colors.GREY_50, height=120,
+                    ),
+                ], spacing=0, scroll=ft.ScrollMode.AUTO),
+                width=390, height=480,
+            ),
+            actions=[ft.TextButton(
+                "Close", on_click=lambda _: self.page_ref.close(dialog),
+                style=ft.ButtonStyle(color=ft.Colors.WHITE,
+                                     bgcolor=ft.Colors.BLUE_600, padding=15),
+            )],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page_ref.open(dialog)
+
+    def _toggle_diet_grocery_link(self, e):
+        """Сохраняет настройку 'Связать диету с магазином'."""
+        try:
+            self.page_ref.client_storage.set("link_diet_grocery", e.control.value)
+            state = "ON" if e.control.value else "OFF"
+            snack = ft.SnackBar(
+                content=ft.Text(f"🥗 Diet ↔ Grocery link: {state}"),
+                bgcolor=ft.Colors.TEAL_600, duration=2000,
+            )
+            self.page_ref.overlay.append(snack)
+            snack.open = True
+            self.page_ref.update()
+        except Exception as ex:
+            print(f"[Header] diet_grocery_link error: {ex}")
+
+
     def show_settings(self, e):
         """✅ УЛУЧШЕННЫЙ дизайн Settings диалога"""
         from utils.translations import translations
@@ -271,6 +425,41 @@ class Header(ft.AppBar):
                         border_radius=8,
                         bgcolor=ft.Colors.GREEN_50,
                         border=ft.border.all(1, ft.Colors.GREEN_200),
+                    ),
+                    
+                    ft.Container(height=15),
+                    
+                    # Diet & Grocery Section
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Icon(ft.Icons.RESTAURANT_MENU, size=18,
+                                        color=ft.Colors.TEAL_600),
+                                ft.Text("Diet & Grocery", size=14,
+                                        weight=ft.FontWeight.BOLD),
+                            ], spacing=8),
+                            ft.Container(height=8),
+                            ft.Row([
+                                ft.Column([
+                                    ft.Text("Link diet plan to grocery store",
+                                            size=13, weight=ft.FontWeight.W_500),
+                                    ft.Text(
+                                        "ON: AI uses only your purchased\n"
+                                        "grocery items for meal plans.",
+                                        size=11, color=ft.Colors.GREY_600,
+                                    ),
+                                ], expand=True, spacing=2),
+                                ft.Switch(
+                                    value=self.page_ref.client_storage.get(
+                                        "link_diet_grocery") or False,
+                                    active_color=ft.Colors.TEAL_600,
+                                    on_change=self._toggle_diet_grocery_link,
+                                ),
+                            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ], spacing=4),
+                        padding=15, border_radius=8,
+                        bgcolor=ft.Colors.TEAL_50,
+                        border=ft.border.all(1, ft.Colors.TEAL_200),
                     ),
                     
                     ft.Container(height=15),

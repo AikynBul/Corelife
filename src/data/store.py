@@ -546,28 +546,33 @@ class EventStore:
             return False
 
     def confirm_purchase(self, user_id):
-        """Подтвердить покупку и списать бюджет"""
+        """Подтвердить покупку.
+        Сохраняет cart -> purchased_cart, очищает cart/subtotal, накапливает spent."""
         if self.db is None:
             return False
-        
         grocery = self.get_user_groceries(user_id)
-        
         if not grocery:
             return False
-        
         subtotal = grocery.get("subtotal", 0)
         budget = grocery.get("weekly_budget", 0)
-        
+        prev_spent = grocery.get("spent", 0)
+        current_cart = grocery.get("cart", [])
+        existing_purchased = grocery.get("purchased_cart", [])
+        merged_purchased = existing_purchased + current_cart
+        new_spent = prev_spent + subtotal
+        new_remaining = budget - new_spent
         try:
-            self.db.grocery_budgets.update_one(
-                {"_id": grocery["_id"]},
-                {"$set": {
-                    "spent": subtotal,
-                    "remaining": budget - subtotal,
-                    "purchased": True,
-                    "purchased_at": datetime.now()
-                }}
-            )
+            update_doc = {"$set": {
+                "spent": new_spent,
+                "remaining": new_remaining,
+                "purchased": True,
+                "purchased_at": datetime.now(),
+                "purchased_cart": merged_purchased,
+                "cart": [],
+                "subtotal": 0,
+            }}
+            self.db.grocery_budgets.update_one({"_id": grocery["_id"]}, update_doc)
+            print(f"[Store] Purchase OK. subtotal={subtotal}, new_spent={new_spent}, items={len(current_cart)}")
             return True
         except Exception as e:
             print(f"Error confirming purchase: {e}")
@@ -636,25 +641,200 @@ class EventStore:
             return False
     
     def update_purchased_items(self, user_id, cart_items, spent):
-        """Обновить список купленных товаров"""
+        """Обновить purchased_cart после удаления товара из купленных."""
         if self.db is None:
             return False
-        
         week_start = get_monday_of_week(datetime.now().date())
         week_start_str = week_start.strftime("%Y-%m-%d")
-        
         try:
+            update_doc = {"$set": {"purchased_cart": cart_items, "spent": spent}}
             self.db.grocery_budgets.update_one(
-                {"user_id": user_id, "week_start": week_start_str},
-                {"$set": {
-                    "cart": cart_items,
-                    "spent": spent,
-                }}
+                {"user_id": user_id, "week_start": week_start_str}, update_doc
             )
             return True
         except Exception as e:
             print(f"Error updating purchased items: {e}")
             return False
+
+    def delete_account(self, user_id):
+        """Полностью удалить аккаунт пользователя и все его данные."""
+        if self.db is None:
+            return False, "Database not connected"
+        try:
+            # Удаляем события
+            self.db.events.delete_many({"user_id": user_id})
+            # Удаляем планы питания
+            self.db.meal_plans.delete_many({"user_id": user_id})
+            # Удаляем данные продуктового магазина
+            self.db.grocery_budgets.delete_many({"user_id": user_id})
+            # Удаляем самого пользователя
+            result = self.db.users.delete_one({"_id": user_id})
+            if result.deleted_count > 0:
+                self.user_id = None
+                print(f"[Store] Account deleted: {user_id}")
+                return True, "Account deleted successfully"
+            else:
+                return False, "User not found"
+        except Exception as e:
+            print(f"Error deleting account: {e}")
+            return False, str(e)
+
+    def update_username(self, user_id, new_name):
+        """Обновить имя пользователя."""
+        if self.db is None:
+            return False, "Database not connected"
+        try:
+            update_doc = {"$set": {"name": new_name}}
+            result = self.db.users.update_one({"_id": user_id}, update_doc)
+            if result.modified_count > 0:
+                return True, "Name updated"
+            return False, "No changes made"
+        except Exception as e:
+            print(f"Error updating username: {e}")
+            return False, str(e)
+
+    def change_password(self, user_id, current_password, new_password):
+        """Сменить пароль пользователя."""
+        if self.db is None:
+            return False, "Database not connected"
+        try:
+            import hashlib
+            user = self.db.users.find_one({"_id": user_id})
+            if not user:
+                return False, "User not found"
+            # Проверяем текущий пароль
+            hashed_current = hashlib.sha256(current_password.encode()).hexdigest()
+            if user.get("password") != hashed_current:
+                return False, "Current password is incorrect"
+            # Устанавливаем новый
+            hashed_new = hashlib.sha256(new_password.encode()).hexdigest()
+            update_doc = {"$set": {"password": hashed_new}}
+            self.db.users.update_one({"_id": user_id}, update_doc)
+            return True, "Password changed successfully"
+        except Exception as e:
+            print(f"Error changing password: {e}")
+            return False, str(e)
+
+
+    def mark_event_completed(self, event_id, completed: bool):
+        """Отметить событие/задачу как выполненное или нет."""
+        if self.collection is None or not self.user_id:
+            return False
+        try:
+            from bson import ObjectId
+            update_doc = {"$set": {"completed": completed}}
+            self.collection.update_one(
+                {"_id": ObjectId(event_id), "user_id": self.user_id},
+                update_doc
+            )
+            return True
+        except Exception as e:
+            print(f"Error marking event completed: {e}")
+            return False
+
+
+    # ============= CREDITS SYSTEM =============
+
+    def ensure_starter_credits(self, user_id):
+        """Выдать 500 кредитов если поле credits отсутствует у пользователя."""
+        if self.db is None:
+            return
+        try:
+            exists_filter = {"_id": user_id, "credits": {"$exists": False}}
+            update_doc = {
+                "$set": {"credits": 500},
+                "$push": {
+                    "credits_history": {
+                        "amount": 500,
+                        "reason": "Welcome bonus",
+                        "type": "bonus",
+                        "created_at": datetime.now()
+                    }
+                }
+            }
+            result = self.db.users.update_one(exists_filter, update_doc)
+            if result.modified_count > 0:
+                print(f"[Credits] User {user_id} received 500 starter credits")
+            else:
+                print(f"[Credits] User {user_id} already has credits, skip")
+        except Exception as e:
+            print(f"Error in ensure_starter_credits: {e}")
+
+    def get_credits(self, user_id):
+        """Получить текущий баланс кредитов."""
+        if self.db is None:
+            return 0
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            return user.get("credits", 0) if user else 0
+        except Exception as e:
+            print(f"Error getting credits: {e}")
+            return 0
+
+    def spend_credits(self, user_id, amount, reason=""):
+        """Списать кредиты. Returns (success: bool, new_balance: int)."""
+        if self.db is None:
+            return False, 0
+        balance = self.get_credits(user_id)
+        if balance < amount:
+            print(f"[Credits] Not enough: have {balance}, need {amount}")
+            return False, balance
+        try:
+            update_doc = {
+                "$inc": {"credits": -amount},
+                "$push": {
+                    "credits_history": {
+                        "amount": -amount,
+                        "reason": reason,
+                        "type": "spend",
+                        "created_at": datetime.now()
+                    }
+                }
+            }
+            self.db.users.update_one({"_id": user_id}, update_doc)
+            new_balance = balance - amount
+            print(f"[Credits] -{amount} ({reason}) | balance: {new_balance}")
+            return True, new_balance
+        except Exception as e:
+            print(f"Error spending credits: {e}")
+            return False, balance
+
+    def add_credits(self, user_id, amount, reason=""):
+        """Начислить кредиты пользователю."""
+        if self.db is None:
+            return False
+        try:
+            update_doc = {
+                "$inc": {"credits": amount},
+                "$push": {
+                    "credits_history": {
+                        "amount": amount,
+                        "reason": reason,
+                        "type": "earn",
+                        "created_at": datetime.now()
+                    }
+                }
+            }
+            self.db.users.update_one({"_id": user_id}, update_doc)
+            return True
+        except Exception as e:
+            print(f"Error adding credits: {e}")
+            return False
+
+    def get_credits_history(self, user_id, limit=15):
+        """История операций с кредитами."""
+        if self.db is None:
+            return []
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            if user:
+                history = user.get("credits_history", [])
+                return list(reversed(history[-limit:]))
+            return []
+        except Exception as e:
+            print(f"Error getting credits history: {e}")
+            return []
+
 
 # Global instance
 store = EventStore()

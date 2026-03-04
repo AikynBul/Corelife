@@ -39,7 +39,40 @@ class Translations:
                 "time": "Time",
                 "close": "Close",
                 "calendar": "Calendar",
-                "diet_view": "Diet"
+                "diet_view": "Diet",
+                
+                # Grocery Store
+                "grocery_store": "Grocery Store",
+                "shop": "Shop",
+                "purchased_items": "Purchased Items",
+                "buy_selected": "Buy Selected",
+                "clear": "Clear",
+                "selected": "Selected",
+                "items": "items",
+                "total": "Total",
+                "after_purchase": "After purchase",
+                "total_spent": "Total Spent",
+                "no_purchases": "No purchases yet",
+                "buy_groceries_first": "Buy groceries first!",
+                "remove": "Remove",
+                "item_removed": "Item removed",
+                
+                # Categories
+                "fruits": "Fruits",
+                "vegetables": "Vegetables",
+                "meat": "Meat & Eggs",
+                "dairy": "Dairy",
+                "bakery": "Bakery & Grains",
+                "other": "Other",
+                
+                # Diet
+                "generate_diet": "Generate Diet Plan",
+                "add_to_calendar": "Add to Calendar",
+                "your_diet_plan": "Your Diet Plan",
+                "diet_preferences": "Your Diet Preferences",
+                "diet_goal": "Diet Goal",
+                "meal_type": "Meal Type",
+                "medical_conditions": "Medical Conditions"
             },
             "ru": {
                 "app_title": "AI Календарь",
@@ -78,7 +111,40 @@ class Translations:
                 "time": "Время",
                 "close": "Закрыть",
                 "calendar": "Календарь",
-                "diet_view": "Диета"
+                "diet_view": "Диета",
+                
+                # Grocery Store
+                "grocery_store": "Магазин",
+                "shop": "Магазин",
+                "purchased_items": "Купленные товары",
+                "buy_selected": "Купить выбранное",
+                "clear": "Очистить",
+                "selected": "Выбрано",
+                "items": "товаров",
+                "total": "Итого",
+                "after_purchase": "После покупки",
+                "total_spent": "Всего потрачено",
+                "no_purchases": "Покупок пока нет",
+                "buy_groceries_first": "Сначала купите продукты!",
+                "remove": "Удалить",
+                "item_removed": "Товар удалён",
+                
+                # Categories
+                "fruits": "Фрукты",
+                "vegetables": "Овощи",
+                "meat": "Мясо и яйца",
+                "dairy": "Молочные продукты",
+                "bakery": "Хлеб и крупы",
+                "other": "Другое",
+                
+                # Diet
+                "generate_diet": "Создать план питания",
+                "add_to_calendar": "Добавить в календарь",
+                "your_diet_plan": "Ваш план питания",
+                "diet_preferences": "Ваши предпочтения",
+                "diet_goal": "Цель диеты",
+                "meal_type": "Тип питания",
+                "medical_conditions": "Медицинские ограничения"
             }
         }
 

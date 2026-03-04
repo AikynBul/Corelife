@@ -26,6 +26,8 @@ def main(page: ft.Page):
     def on_login(user_info):
         """Обработка входа пользователя"""
         store.set_user(user_info["id"])
+        # Выдаём 500 стартовых кредитов если поля credits ещё нет
+        store.ensure_starter_credits(user_info["id"])
         
         # ✅ ИСПРАВЛЕНО: Полностью очищаем страницу перед показом онбординга
         page.clean()
@@ -151,23 +153,44 @@ def main(page: ft.Page):
             app_layout.toggle_sidebar()
 
         page.appbar = Header(
-            page, 
-            on_account_click, 
-            on_language_change=on_language_change, 
+            page,
+            on_account_click,
+            on_language_change=on_language_change,
             on_menu_click=on_menu_click,
-            on_theme_change=on_language_change
+            on_theme_change=on_language_change,
+            user_info=user_info,        # ✅ FIX: передаём имя для аватара
         )
         
         # Use Stack to overlay ChatWidget
+        # chat_fab_container хранится как ref чтобы GroceryStore мог менять bottom
+        chat_fab_container = ft.Container(
+            content=ChatWidget(page, on_refresh=app_layout.refresh_active_view),
+            right=20,
+            bottom=20,
+        )
+
+        def on_grocery_panel_show():
+            """Поднять chat FAB выше нижней панели магазина (80px + отступ)"""
+            chat_fab_container.bottom = 110
+            try:
+                chat_fab_container.update()
+            except Exception:
+                pass
+
+        def on_grocery_panel_hide():
+            """Вернуть chat FAB на обычную позицию"""
+            chat_fab_container.bottom = 20
+            try:
+                chat_fab_container.update()
+            except Exception:
+                pass
+
+        # Передаём callbacks в GroceryStore
+        app_layout.grocery_view.on_panel_show = on_grocery_panel_show
+        app_layout.grocery_view.on_panel_hide = on_grocery_panel_hide
+
         main_stack = ft.Stack(
-            [
-                app_layout,
-                ft.Container(
-                    content=ChatWidget(page, on_refresh=app_layout.refresh_active_view),
-                    right=20,
-                    bottom=20,
-                )
-            ],
+            [app_layout, chat_fab_container],
             expand=True
         )
         

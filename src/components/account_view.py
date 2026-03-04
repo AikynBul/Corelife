@@ -1,11 +1,13 @@
 import flet as ft
 from utils.translations import translations
+from data.store import store
 
 class AccountView(ft.Container):
-    def __init__(self, user_info, on_logout):
+    def __init__(self, user_info, on_logout, page=None):
         super().__init__()
         self.user_info = user_info
         self.on_logout = on_logout
+        self.page_ref = page
         self.expand = True
         self.padding = 40
         self.expand = True
@@ -180,7 +182,7 @@ class AccountView(ft.Container):
                             bgcolor=ft.Colors.BLUE_50,
                             shape=ft.RoundedRectangleBorder(radius=8),
                         ),
-                        on_click=lambda e: print("Save Name Clicked")
+                        on_click=self._save_name
                     )
                 ]
             ),
@@ -208,7 +210,7 @@ class AccountView(ft.Container):
                             bgcolor=ft.Colors.BLUE_50,
                             shape=ft.RoundedRectangleBorder(radius=8),
                         ),
-                        on_click=lambda e: print("Change Password Clicked")
+                        on_click=self._change_password
                     )
                 ]
             ),
@@ -242,7 +244,7 @@ class AccountView(ft.Container):
                         style=ft.ButtonStyle(
                             color=ft.Colors.RED_400,
                         ),
-                        on_click=lambda e: print("Delete Account Clicked")
+                        on_click=self._confirm_delete_account
                     )
                 ]
             ),
@@ -251,3 +253,116 @@ class AccountView(ft.Container):
             border_radius=10,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
         )
+
+    def _show_snack(self, message, color=ft.Colors.GREEN_600):
+        """Показать уведомление."""
+        page = self.page_ref or (self.page if hasattr(self, "page") else None)
+        if page:
+            snack = ft.SnackBar(
+                content=ft.Text(message),
+                bgcolor=color,
+                duration=3000,
+            )
+            page.open(snack)
+
+    def _save_name(self, e):
+        """Сохранить новое имя пользователя."""
+        new_name = self.name_field.value.strip()
+        if not new_name:
+            self._show_snack("Name cannot be empty.", ft.Colors.RED_400)
+            return
+        user_id = self.user_info.get("id")
+        success, msg = store.update_username(user_id, new_name)
+        if success:
+            self.user_info["name"] = new_name
+            self.name_text.value = new_name
+            self.name_text.update()
+            self._show_snack("✅ Name updated successfully!")
+        else:
+            self._show_snack(f"❌ {msg}", ft.Colors.RED_400)
+
+    def _change_password(self, e):
+        """Сменить пароль."""
+        current = self.current_password.value
+        new_pw = self.new_password.value
+        confirm = self.confirm_password.value
+
+        if not current or not new_pw or not confirm:
+            self._show_snack("Please fill in all password fields.", ft.Colors.ORANGE_400)
+            return
+        if new_pw != confirm:
+            self.confirm_password.error_text = "Passwords don't match"
+            self.confirm_password.update()
+            return
+        if len(new_pw) < 6:
+            self.new_password.error_text = "Minimum 6 characters"
+            self.new_password.update()
+            return
+
+        self.confirm_password.error_text = None
+        self.new_password.error_text = None
+        self.confirm_password.update()
+        self.new_password.update()
+
+        user_id = self.user_info.get("id")
+        success, msg = store.change_password(user_id, current, new_pw)
+        if success:
+            self.current_password.value = ""
+            self.new_password.value = ""
+            self.confirm_password.value = ""
+            self.current_password.update()
+            self.new_password.update()
+            self.confirm_password.update()
+            self._show_snack("✅ Password changed successfully!")
+        else:
+            self._show_snack(f"❌ {msg}", ft.Colors.RED_400)
+
+    def _confirm_delete_account(self, e):
+        """Диалог подтверждения удаления аккаунта."""
+        page = self.page_ref or (self.page if hasattr(self, "page") else None)
+        if not page:
+            return
+
+        def do_delete(e):
+            page.close(confirm_dialog)
+            user_id = self.user_info.get("id")
+            success, msg = store.delete_account(user_id)
+            if success:
+                self._show_snack("✅ Account deleted.")
+                import time; time.sleep(0.5)
+                self.on_logout(None)
+            else:
+                self._show_snack(f"❌ {msg}", ft.Colors.RED_400)
+
+        confirm_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED,
+                        color=ft.Colors.RED_600, size=28),
+                ft.Text("Delete Account?", size=18,
+                        weight=ft.FontWeight.BOLD, color=ft.Colors.RED_600),
+            ], spacing=10),
+            content=ft.Text(
+                "This will permanently delete your account, all events, "
+                "meal plans and grocery data. This action cannot be undone.",
+                size=14, color=ft.Colors.GREY_700,
+            ),
+            actions=[
+                ft.TextButton(
+                    "Cancel",
+                    on_click=lambda e: page.close(confirm_dialog),
+                    style=ft.ButtonStyle(color=ft.Colors.GREY_600),
+                ),
+                ft.ElevatedButton(
+                    "Delete Forever",
+                    icon=ft.Icons.DELETE_FOREVER,
+                    on_click=do_delete,
+                    style=ft.ButtonStyle(
+                        color=ft.Colors.WHITE,
+                        bgcolor=ft.Colors.RED_600,
+                    ),
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.open(confirm_dialog)

@@ -328,6 +328,28 @@ class ChatWidget(ft.Column):
         """
         ✅ ОБНОВЛЕНО: Теперь использует task_scheduler для планирования дня
         """
+        # CREDITS: 10 кредитов за каждый AI запрос в чат
+        _uid = store.user_id
+        if _uid:
+            _balance = store.get_credits(_uid)
+            if _balance < 10:
+                self.add_message(
+                    f"⚠️ Not enough credits!\n"
+                    f"You have {_balance} cr. AI Chat costs 10 cr.\n"
+                    "Top up your credits in Account settings.",
+                    is_user=False
+                )
+                return
+            store.spend_credits(_uid, 10, reason="AI Chat message")
+            try:
+                if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                    self.page_ref.appbar.refresh_credits()
+            except Exception:
+                pass
+            _new_bal = store.get_credits(_uid)
+            if _new_bal <= 30:
+                self.add_message(f"⚡ Low credits: {_new_bal} cr remaining.", is_user=False)
+
         try:
             # ✅ ИСПРАВЛЕНО: Проверяем хочет ли пользователь запланировать весь день
             # НЕ перехватываем "plan a meeting", "plan a workout" и т.д.

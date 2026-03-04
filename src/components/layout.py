@@ -21,7 +21,7 @@ class AppLayout(ft.Row):
             content=Sidebar(
                 on_view_change=self.set_view,
                 on_filter_change=self.refresh_active_view,
-                on_date_click=self.go_to_day  # ✅ ДОБАВЛЕНО: callback для мини-календаря
+                on_date_click=self.go_to_day,   # ✅ FIX: передаём клик на дату в sidebar
             ),
             width=250,
             bgcolor=ft.Colors.SURFACE,
@@ -34,7 +34,7 @@ class AppLayout(ft.Row):
         self.month_view = MonthView(on_day_click=self.go_to_day)
         self.day_view = DayView()
         self.week_view = WeekView()
-        self.account_view = AccountView(self.user_info, self.on_logout)
+        self.account_view = AccountView(self.user_info, self.on_logout, page=self.page)
         self.diet_view = DietView(self.page, self.user_info)
         self.grocery_view = GroceryStore(page=self.page, user_info=self.user_info, on_refresh=lambda: self.refresh_grocery())  # ✅ CALLBACK
 
@@ -71,12 +71,11 @@ class AppLayout(ft.Row):
                 self.content_area.content = self.account_view
         elif view_name == "Grocery":
             self.content_area.content = self.grocery_view
-            # ✅ Показываем bottom panel если корзина не пустая
-            if self.grocery_view.cart:
+            # ✅ Показываем bottom panel если корзина не пустая И view_mode == "shop"
+            if self.grocery_view.cart and self.grocery_view.view_mode == "shop":
                 print(f"SET_VIEW: Building bottom panel for Grocery")
                 self.grocery_view.build_bottom_panel()
         elif view_name == "Diet":
-            # ✅ Пересоздаём Diet view каждый раз
             self.diet_view = DietView(self.page, self.user_info)
             self.content_area.content = self.diet_view
         

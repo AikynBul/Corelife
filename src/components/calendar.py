@@ -153,21 +153,35 @@ class MonthView(ft.Column):
                     
                     # Добавляем видимые события
                     for ev in visible_events:
+                        _completed = ev.get("completed", False)
+                        _color = get_event_color(ev)
                         event_controls.append(
                             ft.Container(
-                                content=ft.Text(
-                                    f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
-                                    size=10,
-                                    color=ft.Colors.WHITE,
-                                    no_wrap=True,
-                                    overflow=ft.TextOverflow.ELLIPSIS,
-                                ),
-                                bgcolor=get_event_color(ev),  # ✅ ИЗМЕНЕНО: используем цвет по категории
+                                content=ft.Row([
+                                    ft.Text(
+                                        f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
+                                        size=10,
+                                        color=ft.Colors.WHITE if not _completed else ft.Colors.WHITE60,
+                                        no_wrap=True,
+                                        overflow=ft.TextOverflow.ELLIPSIS,
+                                        expand=True,
+                                    ),
+                                    # ✅ HABIT TRACKER: галочка если выполнено
+                                    ft.Icon(
+                                        ft.Icons.CHECK_CIRCLE,
+                                        size=10,
+                                        color=ft.Colors.WHITE,
+                                        visible=_completed,
+                                    ) if _completed else ft.Container(width=0),
+                                ], spacing=2, tight=True),
+                                # Выполненные — полупрозрачные, невыполненные — яркие
+                                bgcolor=ft.Colors.with_opacity(0.4 if _completed else 1.0, _color),
                                 border_radius=4,
                                 padding=ft.padding.symmetric(horizontal=4, vertical=2),
                                 width=100,
                                 on_click=lambda e, ev2=ev: self.open_event_details(ev2),
                                 ink=True,
+                                tooltip="✅ Completed" if _completed else None,
                             )
                         )
                     
