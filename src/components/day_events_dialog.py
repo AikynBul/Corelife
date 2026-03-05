@@ -167,7 +167,12 @@ class DayEventsDialog(ft.AlertDialog):
         completed = e.control.value
         event_id = event.get("id", "")
 
-        store.mark_event_completed(event_id, completed)
+        recurrence = event.get("recurrence")
+        date_str = (event.get("start") or "").split(" ")[0]
+        if recurrence and recurrence != "none":
+            store.mark_recurring_completion(event_id, date_str, completed)
+        else:
+            store.mark_event_completed(event_id, completed)
         event["completed"] = completed
 
         # Перестраиваем строку с новым статусом

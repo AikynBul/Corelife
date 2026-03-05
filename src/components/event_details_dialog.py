@@ -199,7 +199,12 @@ class EventDetailsDialog(ft.AlertDialog):
         completed = e.control.value
         event_id = self.event.get("id")
         if event_id:
-            store.mark_event_completed(event_id, completed)
+            recurrence = self.event.get("recurrence")
+            date_str = (self.event.get("start") or "").split(" ")[0]
+            if recurrence and recurrence != "none":
+                store.mark_recurring_completion(event_id, date_str, completed)
+            else:
+                store.mark_event_completed(event_id, completed)
             self.event["completed"] = completed
 
         # Обновляем badge

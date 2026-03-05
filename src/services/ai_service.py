@@ -31,14 +31,14 @@ RESCHEDULE synonyms: "move", "change time", "shift", "postpone", "reschedule", "
 CREATE synonyms: "add", "schedule", "create", "make", "set up", "plan", "book", "organize"
 
 Examples:
-- "Remove meeting tomorrow" → action: "delete"
-- "Cancel gym session" → action: "delete"
-- "Get rid of dentist appointment" → action: "delete"
-- "Move dentist to Friday" → action: "reschedule"
-- "Shift workout to 6pm" → action: "reschedule"
-- "Change lunch time to 1pm" → action: "reschedule"
-- "Book a meeting at 3pm" → action: "create"
-- "Plan study session tomorrow" → action: "create"
+- "Remove meeting tomorrow" â' action: "delete"
+- "Cancel gym session" â' action: "delete"
+- "Get rid of dentist appointment" â' action: "delete"
+- "Move dentist to Friday" â' action: "reschedule"
+- "Shift workout to 6pm" â' action: "reschedule"
+- "Change lunch time to 1pm" â' action: "reschedule"
+- "Book a meeting at 3pm" â' action: "create"
+- "Plan study session tomorrow" â' action: "create"
 
 Be intelligent and context-aware. If the user's intent is clear, map it to the correct action.
 
@@ -50,8 +50,8 @@ If user mentions MULTIPLE tasks in one message:
 
 Example:
 User: "Add gym at 5pm and study session tomorrow"
-→ Process ONLY: gym at 5pm (first task)
-→ Response: "✅ Scheduled gym at 5pm! Please add the study session in your next message for better accuracy."
+â' Process ONLY: gym at 5pm (first task)
+â' Response: "â... Scheduled gym at 5pm! Please add the study session in your next message for better accuracy."
 
 This ensures precision and avoids confusion.
 
@@ -78,14 +78,14 @@ Rules:
 
 Categories:
 Determine the category based on event description:
-- "Study" / "📚": homework, studying, learning, exam, lecture, class, reading
-- "Exercise" / "💪": gym, workout, running, sports, fitness, training
-- "Sleep" / "😴": sleep, rest, nap, bedtime
-- "Food" / "🍽️": breakfast, lunch, dinner, eat, meal, snack
-- "Work" / "💼": meeting, work, project, deadline, presentation
-- "Social" / "👥": friends, party, hangout, date, gathering
-- "Health" / "🏥": doctor, dentist, checkup, appointment, therapy
-- "Personal" / "👤": shopping, errands, chores, personal
+- "Study" / "ð"": homework, studying, learning, exam, lecture, class, reading
+- "Exercise" / "ð'ª": gym, workout, running, sports, fitness, training
+- "Sleep" / "ð´": sleep, rest, nap, bedtime
+- "Food" / "ð½ï¸": breakfast, lunch, dinner, eat, meal, snack
+- "Work" / "ð'¼": meeting, work, project, deadline, presentation
+- "Social" / "ð'¥": friends, party, hangout, date, gathering
+- "Health" / "ð¥": doctor, dentist, checkup, appointment, therapy
+- "Personal" / "ð'¤": shopping, errands, chores, personal
 
 For creating events/tasks:
 
@@ -127,7 +127,7 @@ User specifies the exact meal name:
 
 Examples:
 User: "Add chicken salad to Monday's lunch"
-→ {{
+â' {{
   "action": "add_meal",
   "meal_name": "Chicken salad",
   "day": "monday",
@@ -136,7 +136,7 @@ User: "Add chicken salad to Monday's lunch"
 }}
 
 User: "Replace Tuesday breakfast with oatmeal"
-→ {{
+â' {{
   "action": "add_meal",
   "meal_name": "Oatmeal",
   "day": "tuesday",
@@ -152,7 +152,7 @@ User asks AI to suggest meals based on criteria:
 
 Examples:
 User: "Suggest meals with eggs and beef"
-→ {{
+â' {{
   "action": "suggest_meals",
   "criteria": {{
     "ingredients": ["eggs", "beef"],
@@ -167,7 +167,7 @@ User: "Suggest meals with eggs and beef"
 }}
 
 User: "Find dishes with less than 300 calories and high protein"
-→ {{
+â' {{
   "action": "suggest_meals",
   "criteria": {{
     "ingredients": [],
@@ -195,35 +195,35 @@ Smart Scheduling Rules:
    - Default: 1 hour
 
 Examples of auto_schedule:
-- "Study physics tomorrow" → auto_schedule: true, start: "AUTO", duration_hours: 2
-- "Meeting at 3pm" → auto_schedule: false, start: "2026-01-29 15:00"
-- "Workout today" → auto_schedule: true, start: "AUTO", duration_hours: 1
+- "Study physics tomorrow" â' auto_schedule: true, start: "AUTO", duration_hours: 2
+- "Meeting at 3pm" â' auto_schedule: false, start: "2026-01-29 15:00"
+- "Workout today" â' auto_schedule: true, start: "AUTO", duration_hours: 1
 
 For deleting events:
 {{
     "action": "delete",
-    "title": "название события для поиска",
-    "response_message": "подтверждающее сообщение"
+    "title": "Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ ÑÐ¾Ð±ÑÑÐ¸Ñ Ð´Ð»Ñ Ð¿Ð¾Ð¸ÑÐºÐ°",
+    "response_message": "Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ¶Ð´Ð°ÑÑÐµÐµ ÑÐ¾Ð¾Ð±ÑÐµÐ½Ð¸Ðµ"
 }}
 
 For rescheduling events:
 {{
     "action": "reschedule",
-    "title": "название события для поиска",
+    "title": "Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ ÑÐ¾Ð±ÑÑÐ¸Ñ Ð´Ð»Ñ Ð¿Ð¾Ð¸ÑÐºÐ°",
     "new_start": "YYYY-MM-DD HH:MM",
     "new_end": "YYYY-MM-DD HH:MM",
-    "response_message": "подтверждающее сообщение"
+    "response_message": "Ð¿Ð¾Ð´ÑÐ²ÐµÑÐ¶Ð´Ð°ÑÑÐµÐµ ÑÐ¾Ð¾Ð±ÑÐµÐ½Ð¸Ðµ"
 }}
 
 Examples for reschedule/delete:
-- "Move meeting with John to tomorrow at 3pm" → reschedule
-- "Reschedule dentist appointment to next week" → reschedule
-- "Change lunch time to 1pm" → reschedule
+- "Move meeting with John to tomorrow at 3pm" â' reschedule
+- "Reschedule dentist appointment to next week" â' reschedule
+- "Change lunch time to 1pm" â' reschedule
 
 10. Multiple tasks detection:
-    - "homework at 7pm and workout at 3pm" → TWO create objects
-    - "study physics, then go to gym" → TWO create objects
-    - "meeting at 2pm" → ONE create object (but still in array format)
+    - "homework at 7pm and workout at 3pm" â' TWO create objects
+    - "study physics, then go to gym" â' TWO create objects
+    - "meeting at 2pm" â' ONE create object (but still in array format)
 
 11. Conjunction keywords indicating multiple tasks:
     - "and", "then", "also", "plus", "after that"
@@ -303,7 +303,7 @@ If the user's request is not about scheduling, deleting, or rescheduling, just c
                         "content": user_message
                     }
                 ],
-                model="llama-3.3-70b-versatile",  # Лучшая модель Groq для твоей задачи
+                model="llama-3.3-70b-versatile",  # ÐÑÑÑÐ°Ñ Ð¼Ð¾Ð´ÐµÐ»Ñ Groq Ð´Ð»Ñ ÑÐ²Ð¾ÐµÐ¹ Ð·Ð°Ð´Ð°ÑÐ¸
                 temperature=0.7,
                 max_tokens=500,
             )
@@ -322,17 +322,17 @@ If the user's request is not about scheduling, deleting, or rescheduling, just c
             
             parsed = json.loads(text_response)
             
-            # Нормализуем: если не массив, оборачиваем в массив при необходимости
+            # ÐÐ¾ÑÐ¼Ð°Ð»Ð¸Ð·ÑÐµÐ¼: ÐµÑÐ»Ð¸ Ð½Ðµ Ð¼Ð°ÑÑÐ¸Ð², Ð¾Ð±Ð¾ÑÐ°ÑÐ¸Ð²Ð°ÐµÐ¼ Ð² Ð¼Ð°ÑÑÐ¸Ð² Ð¿ÑÐ¸ Ð½ÐµÐ¾Ð±Ñ...Ð¾Ð´Ð¸Ð¼Ð¾ÑÑÐ¸
             if isinstance(parsed, dict):
-                # Одиночное действие (chat, delete, reschedule, add_meal, suggest_meals) или одна задача
+                # ÐÐ´Ð¸Ð½Ð¾ÑÐ½Ð¾Ðµ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ (chat, delete, reschedule, add_meal, suggest_meals) Ð¸Ð»Ð¸ Ð¾Ð´Ð½Ð° Ð·Ð°Ð´Ð°ÑÐ°
                 if parsed.get("action") in ["chat", "delete", "reschedule", "add_meal", "suggest_meals"]:
-                    # Возвращаем как есть (не массив)
+                    # Ð'Ð¾Ð·Ð²ÑÐ°ÑÐ°ÐµÐ¼ ÐºÐ°Ðº ÐµÑÑÑ (Ð½Ðµ Ð¼Ð°ÑÑÐ¸Ð²)
                     return parsed
                 else:
-                    # Одна create задача - оборачиваем в массив для единообразия
+                    # ÐÐ´Ð½Ð° create Ð·Ð°Ð´Ð°ÑÐ° - Ð¾Ð±Ð¾ÑÐ°ÑÐ¸Ð²Ð°ÐµÐ¼ Ð² Ð¼Ð°ÑÑÐ¸Ð² Ð´Ð»Ñ ÐµÐ´Ð¸Ð½Ð¾Ð¾Ð±ÑÐ°Ð·Ð¸Ñ
                     return [parsed]
             elif isinstance(parsed, list):
-                # Уже массив
+                # Ð£Ð¶Ðµ Ð¼Ð°ÑÑÐ¸Ð²
                 return parsed
             else:
                 raise ValueError("Unexpected response format")

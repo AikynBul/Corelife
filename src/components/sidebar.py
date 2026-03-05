@@ -34,6 +34,12 @@ class Sidebar(ft.Container):
                     on_click=lambda e: self.on_view_change("Diet") if self.on_view_change else None, 
                     icon=ft.Icons.RESTAURANT_MENU
                 ),
+                ft.TextButton(
+                    "FAQ",
+                    on_click=lambda e: self.on_view_change("FAQ") if self.on_view_change else None,
+                    icon=ft.Icons.HELP_CENTER,
+                ),
+
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.build_mini_calendar(),
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
@@ -209,3 +215,4 @@ class Sidebar(ft.Container):
                 "tasks": self.tasks_checkbox.value
             }
             self.on_filter_change(filters)
+

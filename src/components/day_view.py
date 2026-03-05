@@ -1,7 +1,7 @@
 import flet as ft
 import datetime
 from data.store import store
-from utils.translations import translations
+from components.event_details_dialog import EventDetailsDialog
 
 # ✅ НОВОЕ: Цвета для категорий (копия из calendar.py)
 CATEGORY_COLORS = {
@@ -271,21 +271,14 @@ class DayView(ft.Column):
         )
 
     def show_event_details(self, event):
-        dlg = ft.AlertDialog(
-            title=ft.Text(translations.get("event_details")),
-            content=ft.Column([
-                ft.Text(f"{translations.get('name')}: {event['title']}", size=16, weight=ft.FontWeight.BOLD),
-                ft.Text(f"{translations.get('time')}: {event['start']} - {event.get('end', '')}"),
-                ft.Text(f"{translations.get('description')}: {event.get('description', '')}"),
-            ], tight=True),
-            actions=[
-                ft.TextButton(translations.get("close"), on_click=lambda e: self.close_dialog(dlg))
-            ],
+        dialog = EventDetailsDialog(
+            self.page,
+            event,
+            on_dismiss=lambda: self.render_and_refresh()
         )
-        self.page.dialog = dlg
-        dlg.open = True
+        self.page.open(dialog)
         self.page.update()
 
-    def close_dialog(self, dlg):
-        dlg.open = False
-        self.page.update()
+    def render_and_refresh(self):
+        self.render_view()
+        self.update()

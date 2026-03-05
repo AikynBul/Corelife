@@ -6,6 +6,8 @@ from components.week_view import WeekView
 from components.account_view import AccountView
 from components.diet_view import DietView
 from components.grocery_store import GroceryStore  # ✅ НОВЫЙ ИМПОРТ
+from components.faq_view import FAQView
+
 
 class AppLayout(ft.Row):
     def __init__(self, page: ft.Page, user_info: dict, on_logout):
@@ -15,13 +17,15 @@ class AppLayout(ft.Row):
         self.on_logout = on_logout
         self.expand = True
         self.spacing = 0
+        self.faq_view = FAQView()
+
         
         # Sidebar
         self.sidebar = ft.Container(
             content=Sidebar(
                 on_view_change=self.set_view,
                 on_filter_change=self.refresh_active_view,
-                on_date_click=self.go_to_day,   # ✅ FIX: передаём клик на дату в sidebar
+                on_date_click=self.go_to_day  # ✅ ДОБАВЛЕНО: callback для мини-календаря
             ),
             width=250,
             bgcolor=ft.Colors.SURFACE,
@@ -71,14 +75,17 @@ class AppLayout(ft.Row):
                 self.content_area.content = self.account_view
         elif view_name == "Grocery":
             self.content_area.content = self.grocery_view
-            # ✅ Показываем bottom panel если корзина не пустая И view_mode == "shop"
-            if self.grocery_view.cart and self.grocery_view.view_mode == "shop":
+            # ✅ Показываем bottom panel если корзина не пустая
+            if self.grocery_view.cart:
                 print(f"SET_VIEW: Building bottom panel for Grocery")
                 self.grocery_view.build_bottom_panel()
         elif view_name == "Diet":
+            # ✅ Пересоздаём Diet view каждый раз
             self.diet_view = DietView(self.page, self.user_info)
             self.content_area.content = self.diet_view
-        
+        elif view_name == "FAQ":
+            self.content_area.content = self.faq_view
+
         self.content_area.update()
 
     def go_to_day(self, date):
@@ -130,3 +137,4 @@ class AppLayout(ft.Row):
         else:
             self.sidebar.width = 0
         self.sidebar.update()
+

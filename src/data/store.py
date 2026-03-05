@@ -16,6 +16,7 @@ class EventStore:
         self.client = None
         self.db = None
         self.collection = None
+        self.completions_collection = None
         self.user_id = None # Set when user logs in
         self._connect()
 
@@ -48,6 +49,7 @@ class EventStore:
                 self.client = MongoClient(mongo_uri)
                 self.db = self.client.get_database("ai_calendar_db")
                 self.collection = self.db.get_collection("events")
+                self.completions_collection = self.db.get_collection("event_completions")
                 print("Connected to MongoDB")
             except Exception as e:
                 print(f"Error connecting to MongoDB: {e}")
@@ -127,10 +129,27 @@ class EventStore:
             return []
         
         results = []
-        
+
         # Helper to get number of days in month
         import calendar
         _, num_days = calendar.monthrange(year, month)
+
+        completion_map = {}
+        if self.completions_collection is not None and self.user_id:
+            try:
+                month_start = f"{year}-{month:02d}-01"
+                month_end = f"{year}-{month:02d}-{num_days:02d}"
+                completions = self.completions_collection.find({
+                    "user_id": self.user_id,
+                    "date": {"$gte": month_start, "$lte": month_end}
+                })
+                completion_map = {
+                    (c.get("parent_event_id"), c.get("date")): c.get("completed", False)
+                    for c in completions
+                }
+            except Exception as e:
+                print(f"Error fetching completion map: {e}")
+                completion_map = {}
         
         for event in events:
             # Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM"
@@ -184,9 +203,10 @@ class EventStore:
                 if should_add:
                     # Create a virtual event instance
                     instance = event.copy()
-                    instance["start"] = current_date.isoformat()
-                    instance["end"] = current_date.isoformat()
-                    # Append original ID to track it
+                    date_str = current_date.isoformat()
+                    instance["start"] = date_str
+                    instance["end"] = date_str
+                    instance["completed"] = completion_map.get((event.get("id"), date_str), False)
                     results.append(instance)
                     
         return results
@@ -716,6 +736,46 @@ class EventStore:
             return False, str(e)
 
 
+    def mark_recurring_completion(self, parent_event_id, date_str, completed):
+        """Mark a specific recurrence of a repeating event as completed."""
+        if self.completions_collection is None or not self.user_id:
+            return False
+        if not parent_event_id or not date_str:
+            return False
+        try:
+            update_doc = {
+                "$set": {
+                    "parent_event_id": parent_event_id,
+                    "date": date_str,
+                    "completed": completed,
+                    "user_id": self.user_id,
+                    "updated_at": datetime.now(),
+                }
+            }
+            self.completions_collection.update_one(
+                {"parent_event_id": parent_event_id, "date": date_str, "user_id": self.user_id},
+                update_doc,
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            print(f"Error marking recurring completion: {e}")
+            return False
+
+    def get_recurring_completion(self, parent_event_id, date_str):
+        """Get completion status for a specific recurrence."""
+        if self.completions_collection is None or not self.user_id:
+            return None
+        if not parent_event_id or not date_str:
+            return None
+        try:
+            doc = self.completions_collection.find_one(
+                {"parent_event_id": parent_event_id, "date": date_str, "user_id": self.user_id}
+            )
+            return doc.get("completed") if doc else None
+        except Exception as e:
+            print(f"Error getting recurring completion: {e}")
+            return None
     def mark_event_completed(self, event_id, completed: bool):
         """Отметить событие/задачу как выполненное или нет."""
         if self.collection is None or not self.user_id:
@@ -838,3 +898,7 @@ class EventStore:
 
 # Global instance
 store = EventStore()
+
+
+
+
