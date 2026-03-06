@@ -1,5 +1,6 @@
 import flet as ft
 import random
+from data.faq_data import FAQ_ITEMS, find_faq_answer
 from data.store import store
 from services.ai_service import AIService
 from services.task_scheduler import TaskScheduler  # ✅ НОВЫЙ ИМПОРТ
@@ -312,6 +313,130 @@ class ChatWidget(ft.Column):
         if update:
             self.update()
 
+    def _extract_event_datetime(self, start, end=None):
+        date_str = ""
+        time_str = ""
+        if start:
+            parts = start.split(" ")
+            date_str = parts[0]
+            if len(parts) > 1:
+                time_str = parts[1][:5]
+        if end and " " in end:
+            end_time = end.split(" ")[1][:5]
+            if time_str:
+                time_str = f"{time_str} - {end_time}"
+        if not time_str:
+            time_str = "All day"
+        return date_str, time_str
+
+    def add_event_card(self, title, date_str, time_str, description=""):
+        card = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.EVENT, color=ft.Colors.BLUE_600, size=20),
+                            ft.Text(
+                                "Event Created!",
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.BLUE_600,
+                                size=14,
+                            ),
+                        ],
+                        spacing=8,
+                    ),
+                    ft.Divider(height=1, color=ft.Colors.BLUE_100),
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.TITLE, size=14, color=ft.Colors.GREY_600),
+                            ft.Text(title, size=13),
+                        ],
+                        spacing=6,
+                    ),
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.CALENDAR_TODAY, size=14, color=ft.Colors.GREY_600),
+                            ft.Text(date_str, size=13),
+                        ],
+                        spacing=6,
+                    ),
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.ACCESS_TIME, size=14, color=ft.Colors.GREY_600),
+                            ft.Text(time_str, size=13),
+                        ],
+                        spacing=6,
+                    ),
+                ]
+                + (
+                    [
+                        ft.Row(
+                            [
+                                ft.Icon(ft.Icons.NOTES, size=14, color=ft.Colors.GREY_600),
+                                ft.Text(description, size=12, color=ft.Colors.GREY_600),
+                            ],
+                            spacing=6,
+                        )
+                    ]
+                    if description
+                    else []
+                ),
+                spacing=6,
+            ),
+            bgcolor=ft.Colors.BLUE_50,
+            border=ft.border.all(1, ft.Colors.BLUE_200),
+            border_radius=10,
+            padding=12,
+            width=320,
+        )
+        self.chat_history.controls.append(
+            ft.Row([card], alignment=ft.MainAxisAlignment.START)
+        )
+        self.chat_history.update()
+
+    def add_faq_card(self, question, answer):
+        card = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.HELP_CENTER, color=ft.Colors.INDIGO_600, size=20),
+                            ft.Text(
+                                "FAQ",
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.INDIGO_600,
+                                size=14,
+                            ),
+                        ],
+                        spacing=8,
+                    ),
+                    ft.Divider(height=1, color=ft.Colors.INDIGO_100),
+                    ft.Text(
+                        f"❓ {question}",
+                        size=13,
+                        weight=ft.FontWeight.W_500,
+                        color=ft.Colors.INDIGO_900,
+                    ),
+                    ft.Container(
+                        content=ft.Text(answer, size=13, color=ft.Colors.GREY_800),
+                        bgcolor=ft.Colors.INDIGO_50,
+                        border_radius=8,
+                        padding=10,
+                    ),
+                ],
+                spacing=8,
+            ),
+            bgcolor=ft.Colors.WHITE,
+            border=ft.border.all(1, ft.Colors.INDIGO_200),
+            border_radius=10,
+            padding=12,
+            width=340,
+        )
+        self.chat_history.controls.append(
+            ft.Row([card], alignment=ft.MainAxisAlignment.START)
+        )
+        self.chat_history.update()
+
     def send_message(self, e):
         text = self.input_field.value
         if not text:
@@ -328,32 +453,36 @@ class ChatWidget(ft.Column):
         """
         ✅ ОБНОВЛЕНО: Теперь использует task_scheduler для планирования дня
         """
-        # CREDITS: 10 кредитов за каждый AI запрос в чат
-        _uid = store.user_id
-        if _uid:
-            _balance = store.get_credits(_uid)
-            if _balance < 10:
-                self.add_message(
-                    f"⚠️ Not enough credits!\n"
-                    f"You have {_balance} cr. AI Chat costs 10 cr.\n"
-                    "Top up your credits in Account settings.",
-                    is_user=False
-                )
-                return
-            store.spend_credits(_uid, 10, reason="AI Chat message")
-            try:
-                if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
-                    self.page_ref.appbar.refresh_credits()
-            except Exception:
-                pass
-            _new_bal = store.get_credits(_uid)
-            if _new_bal <= 30:
-                self.add_message(f"⚡ Low credits: {_new_bal} cr remaining.", is_user=False)
-
         try:
             # ✅ ИСПРАВЛЕНО: Проверяем хочет ли пользователь запланировать весь день
             # НЕ перехватываем "plan a meeting", "plan a workout" и т.д.
             text_lower = text.lower()
+
+            # FAQ support in AI assistant chat.
+            if text_lower.strip() in {"faq", "help faq", "help", "помощь", "справка"}:
+                faq_list = "\n".join([f"• {item['question']}" for item in FAQ_ITEMS])
+                self.add_message(
+                    "Here are the main FAQ topics:\n\n"
+                    f"{faq_list}\n\n"
+                    "Ask any of these in chat and I will answer directly.",
+                    is_user=False,
+                )
+                return
+
+            # Only use local FAQ for clear how-to questions, not scheduling/action requests
+            # Scheduling intent words take priority over FAQ
+            _scheduling_words = [
+                "plan ", "schedule ", "add ", "create ", "remind ", "book ", "set up ",
+                "remove ", "delete ", "cancel ", "move ", "reschedule ", "shift ",
+                "запланируй", "добавь", "создай", "удали", "перенеси",
+            ]
+            _has_scheduling_intent = any(w in text_lower for w in _scheduling_words)
+            
+            if not _has_scheduling_intent:
+                faq_match = find_faq_answer(text)
+                if faq_match:
+                    self.add_faq_card(faq_match["question"], faq_match["answer"])
+                    return
             
             # Проверяем ТОЧНЫЕ фразы для планирования дня
             is_day_planning = (
@@ -409,6 +538,31 @@ class ChatWidget(ft.Column):
                 return
             
             # ✅ ОБЫЧНАЯ ЛОГИКА: Используем AI для разбора отдельных команд
+            # Check credits before calling AI
+            _uid = store.user_id
+            if _uid:
+                _balance = store.get_credits(_uid)
+                if _balance < 10:
+                    self.add_message(
+                        "⚡ Not enough credits to use AI chat! "
+                        f"You have {_balance} cr. Credits can be earned or topped up in Settings.",
+                        is_user=False
+                    )
+                    return
+                store.spend_credits(_uid, 10, reason="AI Chat message")
+                # Refresh header badge
+                try:
+                    if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                        self.page_ref.appbar.refresh_credits()
+                    _new_bal = store.get_credits(_uid)
+                    if _new_bal <= 30:
+                        self.add_message(
+                            f"⚡ Low credits: {_new_bal} cr remaining.",
+                            is_user=False
+                        )
+                except Exception:
+                    pass
+
             result = self.ai_service.process_message(text)
             
             # Проверяем формат ответа
@@ -447,8 +601,15 @@ class ChatWidget(ft.Column):
                         # Только если НЕ использовали умное планирование
                         if created_count == 1:
                             first_item = result[0]
-                            response_msg = first_item.get("response_message", f"✅ Event created! Check your calendar.")
-                            self.add_message(response_msg, is_user=False)
+                            start = first_item.get("start", "")
+                            end = first_item.get("end", "")
+                            date_str, time_str = self._extract_event_datetime(start, end)
+                            self.add_event_card(
+                                title=first_item.get("title", "Event"),
+                                date_str=date_str,
+                                time_str=time_str,
+                                description=first_item.get("description", "") or "",
+                            )
                         else:
                             self.add_message(
                                 f"✅ Created {created_count} tasks! Check your calendar.",
@@ -490,9 +651,14 @@ class ChatWidget(ft.Column):
                         priority=result.get("priority", "Medium"),
                         category=result.get("category", "Personal")
                     )
-                    self.add_message(
-                        f"✅ Scheduled: {result['title']} at {result['start']}",
-                        is_user=False
+                    date_str, time_str = self._extract_event_datetime(
+                        result.get("start", ""), result.get("end", "")
+                    )
+                    self.add_event_card(
+                        title=result.get("title", "Event"),
+                        date_str=date_str,
+                        time_str=time_str,
+                        description=result.get("description", "") or "",
                     )
                 
                 self.refresh_calendar()

@@ -96,8 +96,14 @@ class MonthView(ft.Column):
         loop = asyncio.get_running_loop()
         self.events_cache = await loop.run_in_executor(None, store.get_events_for_month, year, month)
         self.is_loading = False
+        # Guard: page may be None if layout was rebuilt while fetch was running
+        if self.page is None:
+            return
         self.render_calendar()
-        self.update()
+        try:
+            self.update()
+        except Exception:
+            pass
 
     def render_calendar(self):
         if self.is_loading:
@@ -124,7 +130,7 @@ class MonthView(ft.Column):
                     row_controls.append(
                         ft.Container(
                             expand=True,
-                            bgcolor=ft.Colors.SURFACE if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_50,
+                            bgcolor=ft.Colors.SURFACE if (self.page and self.page.theme_mode == ft.ThemeMode.DARK) else ft.Colors.GREY_50,
                             border=ft.border.all(0.5, ft.Colors.GREY_300),
                         )
                     )
@@ -153,35 +159,21 @@ class MonthView(ft.Column):
                     
                     # Добавляем видимые события
                     for ev in visible_events:
-                        _completed = ev.get("completed", False)
-                        _color = get_event_color(ev)
                         event_controls.append(
                             ft.Container(
-                                content=ft.Row([
-                                    ft.Text(
-                                        f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
-                                        size=10,
-                                        color=ft.Colors.WHITE if not _completed else ft.Colors.WHITE60,
-                                        no_wrap=True,
-                                        overflow=ft.TextOverflow.ELLIPSIS,
-                                        expand=True,
-                                    ),
-                                    # ✅ HABIT TRACKER: галочка если выполнено
-                                    ft.Icon(
-                                        ft.Icons.CHECK_CIRCLE,
-                                        size=10,
-                                        color=ft.Colors.WHITE,
-                                        visible=_completed,
-                                    ) if _completed else ft.Container(width=0),
-                                ], spacing=2, tight=True),
-                                # Выполненные — полупрозрачные, невыполненные — яркие
-                                bgcolor=ft.Colors.with_opacity(0.4 if _completed else 1.0, _color),
+                                content=ft.Text(
+                                    f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
+                                    size=10,
+                                    color=ft.Colors.WHITE,
+                                    no_wrap=True,
+                                    overflow=ft.TextOverflow.ELLIPSIS,
+                                ),
+                                bgcolor=get_event_color(ev),  # ✅ ИЗМЕНЕНО: используем цвет по категории
                                 border_radius=4,
                                 padding=ft.padding.symmetric(horizontal=4, vertical=2),
                                 width=100,
                                 on_click=lambda e, ev2=ev: self.open_event_details(ev2),
                                 ink=True,
-                                tooltip="✅ Completed" if _completed else None,
                             )
                         )
                     
@@ -238,7 +230,7 @@ class MonthView(ft.Column):
                         spacing=2,
                     )
                     
-                    cell_bgcolor = ft.Colors.SURFACE if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.WHITE
+                    cell_bgcolor = ft.Colors.SURFACE if (self.page and self.page.theme_mode == ft.ThemeMode.DARK) else ft.Colors.WHITE
                     
                     row_controls.append(
                         ft.Container(

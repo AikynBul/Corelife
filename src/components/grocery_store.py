@@ -259,19 +259,20 @@ class GroceryStore(ft.Container):
     def on_budget_set(self, budget):
         """Обработать установку бюджета"""
         success = store.set_user_budget(self.user_info["id"], budget)
-        
+
         if success:
             self.load_grocery_data()
-            # ✅ ИСПРАВЛЕНО: Не вызываем build_ui() и update()
-            
-            # ✅ ИСПРАВЛЕНО: Правильный API для snackbar
-            snackbar = ft.SnackBar(
+            # Rebuild UI so budget display updates immediately
+            self.build_ui()
+            try:
+                self.update()
+            except Exception:
+                self.page_ref.update()
+
+            self.page_ref.open(ft.SnackBar(
                 content=ft.Text(f"✅ Budget set: {budget:,} ₸"),
-                bgcolor=ft.Colors.GREEN_600
-            )
-            self.page_ref.overlay.append(snackbar)
-            snackbar.open = True
-            self.page_ref.update()
+                bgcolor=ft.Colors.GREEN_600,
+            ))
     
     def build_ui(self):
         """Построить UI"""
@@ -814,4 +815,4 @@ class GroceryStore(ft.Container):
         self.load_grocery_data()
         self.view_mode = "purchased"
         self.build_ui()
-        self.update()   
+        self.update()

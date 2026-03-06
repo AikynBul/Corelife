@@ -796,27 +796,34 @@ class EventStore:
     # ============= CREDITS SYSTEM =============
 
     def ensure_starter_credits(self, user_id):
-        """Выдать 500 кредитов если поле credits отсутствует у пользователя."""
+        """Выдать 500 стартовых кредитов новому пользователю.
+        Читаем текущий баланс напрямую — если 0 или поля нет, принудительно ставим 500.
+        """
         if self.db is None:
             return
         try:
-            exists_filter = {"_id": user_id, "credits": {"$exists": False}}
-            update_doc = {
-                "$set": {"credits": 500},
-                "$push": {
-                    "credits_history": {
-                        "amount": 500,
-                        "reason": "Welcome bonus",
-                        "type": "bonus",
-                        "created_at": datetime.now()
+            current = self.get_credits(user_id)
+            if current > 0:
+                print(f"[Credits] User {user_id} has {current} cr, no top-up needed")
+                return
+
+            # Balance is 0 or missing — set 500 unconditionally
+            self.db.users.update_one(
+                {"_id": user_id},
+                {
+                    "$set": {"credits": 500},
+                    "$push": {
+                        "credits_history": {
+                            "amount": 500,
+                            "reason": "Welcome bonus",
+                            "type": "bonus",
+                            "created_at": datetime.now()
+                        }
                     }
-                }
-            }
-            result = self.db.users.update_one(exists_filter, update_doc)
-            if result.modified_count > 0:
-                print(f"[Credits] User {user_id} received 500 starter credits")
-            else:
-                print(f"[Credits] User {user_id} already has credits, skip")
+                },
+                upsert=True
+            )
+            print(f"[Credits] User {user_id} received 500 starter credits")
         except Exception as e:
             print(f"Error in ensure_starter_credits: {e}")
 
@@ -898,7 +905,3 @@ class EventStore:
 
 # Global instance
 store = EventStore()
-
-
-
-

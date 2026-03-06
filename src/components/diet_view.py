@@ -693,23 +693,35 @@ class DietView(ft.Column):
         self.controls.append(table_container)
         
         # ✅ УЛУЧШЕНО: Итоговая калорийность + БЖУ
-        total_calories = 0
-        total_protein = 0
-        total_carbs = 0
-        total_fats = 0
-        
-        for day_meals in plan.values():
-            for meal in day_meals.values():
-                total_calories += meal.get("calories", 0)
-                total_protein += meal.get("protein", 0)
-                total_carbs += meal.get("carbs", 0)
-                total_fats += meal.get("fats", 0)
-        
-        # Средние значения на день
-        avg_calories = total_calories // 7
-        avg_protein = total_protein // 7
-        avg_carbs = total_carbs // 7
-        avg_fats = total_fats // 7
+        # Use USDA pre-computed daily_avg if available; otherwise manual sum
+        _DAYS = {"monday","tuesday","wednesday","thursday","friday","saturday","sunday"}
+        _daily_avg = plan.get("daily_avg")
+
+        if _daily_avg and isinstance(_daily_avg, dict):
+            avg_calories = int(_daily_avg.get("calories", 0))
+            avg_protein  = int(_daily_avg.get("protein",  0))
+            avg_carbs    = int(_daily_avg.get("carbs",    0))
+            avg_fats     = int(_daily_avg.get("fats",     0))
+        else:
+            total_calories = 0
+            total_protein  = 0
+            total_carbs    = 0
+            total_fats     = 0
+            for day_key, day_meals in plan.items():
+                # Skip metadata keys: daily_avg, weekly_totals, usda_enriched
+                if day_key not in _DAYS or not isinstance(day_meals, dict):
+                    continue
+                for meal in day_meals.values():
+                    if not isinstance(meal, dict):
+                        continue
+                    total_calories += meal.get("calories", 0)
+                    total_protein  += meal.get("protein",  0)
+                    total_carbs    += meal.get("carbs",    0)
+                    total_fats     += meal.get("fats",     0)
+            avg_calories = total_calories // 7
+            avg_protein  = total_protein  // 7
+            avg_carbs    = total_carbs    // 7
+            avg_fats     = total_fats     // 7
         
         summary = ft.Container(
             content=ft.Column([
@@ -796,16 +808,17 @@ class DietView(ft.Column):
         self.controls.append(summary)
     
     def generate_meal_plan(self, e):
-        """✅ НОВОЕ: Генерирует план питания через AI"""
-        # CREDITS: 100 кредитов за генерацию плана (каждый раз)
-        _uid = store.user_id
+        """Generate meal plan — checks credits, reads client_storage FIRST, then runs async."""
+        _uid = store.user_id or self.user_info.get("id")
+
+        # 1. Credits check (synchronous, safe here)
         if _uid:
             _balance = store.get_credits(_uid)
             if _balance < 100:
                 self.page_ref.open(ft.SnackBar(
                     content=ft.Text(
-                        f"⚠️ Not enough credits! You have {_balance} cr. "
-                        "Diet plan generation costs 100 cr."
+                        f"⚡ Not enough credits! You have {_balance} cr, "
+                        "need 100 cr to generate a diet plan."
                     ),
                     bgcolor=ft.Colors.RED_400, duration=4000,
                 ))
@@ -817,65 +830,33 @@ class DietView(ft.Column):
             except Exception:
                 pass
 
-        # Показываем индикатор загрузки
-        loading_snack = ft.SnackBar(
-            content=ft.Row([
-                ft.ProgressRing(width=16, height=16, stroke_width=2),
-                ft.Text("Generating meal plan... Please wait 5-10 seconds"),
-            ]),
-            bgcolor=ft.Colors.BLUE_400,
-            duration=10000
-        )
-        self.page_ref.open(loading_snack)
-        
-        # Генерируем план в фоновом потоке
-        self.page_ref.run_task(self._generate_plan_async)
-    
-    async def _generate_plan_async(self):
-        """Асинхронная генерация плана"""
-        from services.diet_ai_service import DietAIService
-        
-        diet_ai = DietAIService()
-        
-        # Получаем актуальные предпочтения
-        current_prefs = {**self.preferences, **self.temp_changes}
-        medical_notes = current_prefs.get("medical_notes", "")
-        
-        # Проверяем настройку "связать диету с магазином"
+        # 2. Read client_storage HERE (sync context — no timeout risk)
         link_enabled = False
         try:
             _val = self.page_ref.client_storage.get("link_diet_grocery")
-            # client_storage может вернуть bool, строку "true"/"false", или None
             if isinstance(_val, bool):
                 link_enabled = _val
             elif isinstance(_val, str):
                 link_enabled = _val.lower() in ("true", "1", "yes")
-            else:
-                link_enabled = bool(_val)
-            print(f"[Diet] link_diet_grocery = {link_enabled!r} (raw={_val!r})")
+            print(f"[Diet] link_diet_grocery raw={_val!r} → {link_enabled}")
         except Exception as _ex:
             print(f"[Diet] client_storage error: {_ex}")
-            link_enabled = False
-        
-        available_ingredients = None  # None = AI генерирует свободно
-        
+
+        # 3. Read purchased ingredients (sync, safe here)
+        available_ingredients = None
         if link_enabled:
-            # Используем self.user_info["id"] как надёжный fallback
-            _uid_for_grocery = store.user_id or self.user_info.get("id")
-            grocery_data = store.get_user_groceries(_uid_for_grocery)
-            print(f"[Diet] Fetching groceries for uid={_uid_for_grocery}, data={grocery_data is not None}")
+            _uid_g = store.user_id or self.user_info.get("id")
+            grocery_data = store.get_user_groceries(_uid_g)
             purchased_items = []
             if grocery_data:
-                # Читаем из purchased_cart (основное поле после покупки)
                 purchased_items = grocery_data.get("purchased_cart", [])
                 if not purchased_items:
                     purchased_items = grocery_data.get("cart", [])
-            
+            print(f"[Diet] purchased_items count: {len(purchased_items)}")
+
             if not purchased_items:
-                # Продуктов нет — возвращаем кредиты и показываем ошибку
-                _uid = store.user_id
                 if _uid:
-                    store.add_credits(_uid, 100, reason="Refund: no groceries for diet plan")
+                    store.add_credits(_uid, 100, reason="Refund: no groceries")
                     try:
                         if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
                             self.page_ref.appbar.refresh_credits()
@@ -883,110 +864,87 @@ class DietView(ft.Column):
                         pass
                 self.page_ref.open(ft.SnackBar(
                     content=ft.Text(
-                        "🛒 No purchased groceries found! "
-                        "Please buy groceries first, or turn OFF "
-                        "'Link diet to grocery' in Settings."
+                        "🛒 No purchased groceries! "
+                        "Buy groceries first or turn OFF 'Link diet to grocery' in Settings."
                     ),
                     bgcolor=ft.Colors.ORANGE_600, duration=6000,
                 ))
                 return
-            
+
             available_ingredients = [item["name"] for item in purchased_items]
-            print(f"[Diet AI] Link ON — using {len(available_ingredients)} purchased ingredients")
-            
-            # Проверяем минимальное количество продуктов для цели диеты
-            diet_goal = current_prefs.get("diet_goal", "meal_planning")
-            # Минимальные требования: muscle_gain нужно больше всего (белок+углеводы+жиры)
-            min_required = {
-                "muscle_gain": 6,       # белок, углеводы, жиры, овощи — нужно разнообразие
-                "weight_loss": 5,       # белок + овощи + злаки
-                "healthy_lifestyle": 4, # базовое разнообразие
-                "meal_planning": 3,     # минимум
-            }
-            required = min_required.get(diet_goal, 4)
-            
-            if len(available_ingredients) < required:
-                _uid = store.user_id
-                if _uid:
-                    store.add_credits(_uid, 100, reason="Refund: insufficient groceries for diet")
-                    try:
-                        if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
-                            self.page_ref.appbar.refresh_credits()
-                    except Exception:
-                        pass
-                goal_labels = {
-                    "muscle_gain": "Muscle Gain",
-                    "weight_loss": "Weight Loss",
-                    "healthy_lifestyle": "Healthy Lifestyle",
-                    "meal_planning": "Meal Planning",
-                }
-                goal_name = goal_labels.get(diet_goal, diet_goal)
-                self.page_ref.open(ft.SnackBar(
-                    content=ft.Text(
-                        f"🛒 Not enough groceries for '{goal_name}'! "
-                        f"You have {len(available_ingredients)} items, "
-                        f"need at least {required}. "
-                        "Buy more products or turn OFF the diet-grocery link in Settings."
-                    ),
-                    bgcolor=ft.Colors.ORANGE_600, duration=7000,
-                ))
-                return
-        
-        # Генерируем план
+            print(f"[Diet AI] Link ON — ingredients: {available_ingredients}")
+
+        # 4. Show loading and launch async task (pass data as arguments, no client_storage inside)
+        loading_snack = ft.SnackBar(
+            content=ft.Row([
+                ft.ProgressRing(width=16, height=16, stroke_width=2),
+                ft.Text("Generating meal plan... Please wait 10-20 seconds"),
+            ]),
+            bgcolor=ft.Colors.BLUE_400,
+            duration=20000
+        )
+        self.page_ref.open(loading_snack)
+        self.page_ref.run_task(self._generate_plan_async, available_ingredients)
+
+    async def _generate_plan_async(self, available_ingredients=None):
+        """Async plan generation — receives all data as arguments, never calls client_storage."""
         import asyncio
+        from services.diet_ai_service import DietAIService
+
+        diet_ai = DietAIService()
+        current_prefs = {**self.preferences, **self.temp_changes}
+        medical_notes = current_prefs.get("medical_notes", "")
+
+        # Generate plan in thread executor (blocking Groq + USDA calls)
         loop = asyncio.get_running_loop()
         new_plan = await loop.run_in_executor(
             None, diet_ai.generate_weekly_plan, current_prefs, medical_notes, available_ingredients
         )
-        
+
+        # Handle AI-side insufficiency error (grocery link ON but ingredients don't fit goal)
+        if isinstance(new_plan, dict) and new_plan.get("error"):
+            _uid = store.user_id or self.user_info.get("id")
+            if _uid:
+                store.add_credits(_uid, 100, reason="Refund: groceries insufficient")
+                try:
+                    if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
+                        self.page_ref.appbar.refresh_credits()
+                except Exception:
+                    pass
+            self.page_ref.open(ft.SnackBar(
+                content=ft.Text(
+                    f"🛒 {new_plan.get('reason', 'Groceries not suitable for this diet goal.')} "
+                    "Buy more products or turn OFF the grocery link in Settings."
+                ),
+                bgcolor=ft.Colors.ORANGE_700, duration=7000,
+            ))
+            return
+
         if new_plan:
-            # Сохраняем в БД
             store.save_weekly_meal_plan(self.user_info["id"], new_plan)
-            
-            # Обновляем локальную копию
             self.meal_plan = new_plan
-            
-            # Перестраиваем UI
+
+            # Rebuild UI safely — use page_ref.update() instead of self.update()
+            # to avoid AssertionError when DietView is not the active control
             self.controls.clear()
             self.build_ui()
-            self.update()
-            
-            # Показываем успех
-            success_snack = ft.SnackBar(
-                content=ft.Text("✅ Meal plan generated successfully!"),
-                bgcolor=ft.Colors.GREEN_400
-            )
-            self.page_ref.open(success_snack)
-        else:
-            # Показываем ошибку
-            error_snack = ft.SnackBar(
-                content=ft.Text("❌ Failed to generate meal plan. Please try again."),
-                bgcolor=ft.Colors.RED_400
-            )
-            self.page_ref.open(error_snack)
-    
-    def replace_meal(self, day, meal_type):
-        """✅ НОВОЕ: Заменяет конкретное блюдо"""
-        # CREDITS: 15 кредитов за замену блюда
-        _uid = store.user_id
-        if _uid:
-            _balance = store.get_credits(_uid)
-            if _balance < 15:
-                self.page_ref.open(ft.SnackBar(
-                    content=ft.Text(
-                        f"⚠️ Not enough credits! You have {_balance} cr. "
-                        "Replacing a meal costs 15 cr."
-                    ),
-                    bgcolor=ft.Colors.RED_400, duration=4000,
-                ))
-                return
-            store.spend_credits(_uid, 15, reason="Replace meal")
             try:
-                if self.page_ref.appbar and hasattr(self.page_ref.appbar, "refresh_credits"):
-                    self.page_ref.appbar.refresh_credits()
+                self.page_ref.update()
             except Exception:
                 pass
 
+            self.page_ref.open(ft.SnackBar(
+                content=ft.Text("✅ Meal plan generated successfully!"),
+                bgcolor=ft.Colors.GREEN_400
+            ))
+        else:
+            self.page_ref.open(ft.SnackBar(
+                content=ft.Text("❌ Failed to generate meal plan. Please try again."),
+                bgcolor=ft.Colors.RED_400
+            ))
+    
+    def replace_meal(self, day, meal_type):
+        """✅ НОВОЕ: Заменяет конкретное блюдо"""
         loading_snack = ft.SnackBar(
             content=ft.Row([
                 ft.ProgressRing(width=16, height=16, stroke_width=2),
@@ -1026,8 +984,11 @@ class DietView(ft.Column):
             # Перестраиваем UI
             self.controls.clear()
             self.build_ui()
-            self.update()
-            
+            try:
+                self.page_ref.update()
+            except Exception:
+                pass
+
             success_snack = ft.SnackBar(
                 content=ft.Text(f"✅ {day.capitalize()}'s {meal_type} replaced!"),
                 bgcolor=ft.Colors.GREEN_400
@@ -1049,7 +1010,10 @@ class DietView(ft.Column):
             
             self.controls.clear()
             self.build_ui()
-            self.update()
+            try:
+                self.page_ref.update()
+            except Exception:
+                pass
             
             snack = ft.SnackBar(content=ft.Text("Meal plan deleted"), bgcolor=ft.Colors.BLUE_400)
             self.page_ref.open(snack)
@@ -1146,40 +1110,67 @@ class DietView(ft.Column):
     
     def take_quiz(self, e):
         from components.diet_quiz_view import DietQuizView
-        self.page_ref.clean()
-        self.page_ref.overlay.clear()  # ✅ ИСПРАВЛЕНО: Очищаем overlay
-        
+        _page = self.page_ref
+
         def on_complete():
-            self.page_ref.clean()
-            self.page_ref.overlay.clear()  # ✅ ИСПРАВЛЕНО: Очищаем overlay
             from components.layout import AppLayout
             from components.header import Header
             from components.chat import ChatWidget
-            
-            app_layout = AppLayout(self.page_ref, self.user_info, lambda e: None)
-            app_layout.set_view("Diet")
-            
-            self.page_ref.appbar = Header(
-                self.page_ref,
+
+            # Clean page first
+            _page.clean()
+            _page.overlay.clear()
+            _page.appbar = None
+            _page.update()
+
+            def _on_logout(ev):
+                from data.store import store as _store
+                _store.set_user(None)
+                _page.clean()
+                _page.appbar = None
+                from components.login_view import LoginView
+                _page.add(LoginView(on_login=lambda ui: None))
+                _page.update()
+
+            app_layout = AppLayout(_page, self.user_info, _on_logout)
+
+            _page.appbar = Header(
+                _page,
                 lambda: app_layout.set_view("Account"),
-                on_menu_click=lambda e: app_layout.toggle_sidebar()
+                on_menu_click=lambda ev: app_layout.toggle_sidebar(),
+                user_info=self.user_info,
             )
-            
-            main_stack = ft.Stack([
-                app_layout,
-                ft.Container(
-                    content=ChatWidget(self.page_ref, on_refresh=app_layout.refresh_active_view),
-                    right=20,
-                    bottom=20,
-                )
-            ], expand=True)
-            
-            self.page_ref.add(main_stack)
-            self.page_ref.update()
-        
-        quiz = DietQuizView(self.page_ref, self.user_info, on_complete)
-        self.page_ref.add(quiz)
-        self.page_ref.update()    
+
+            chat_widget = ChatWidget(_page, on_refresh=app_layout.refresh_active_view)
+            chat_container = ft.Container(content=chat_widget, right=20, bottom=20)
+
+            def _on_panel_show():
+                chat_container.bottom = 110
+                try: _page.update()
+                except Exception: pass
+
+            def _on_panel_hide():
+                chat_container.bottom = 20
+                try: _page.update()
+                except Exception: pass
+
+            app_layout.grocery_view.on_panel_show = _on_panel_show
+            app_layout.grocery_view.on_panel_hide = _on_panel_hide
+
+            # ✅ Add to page FIRST, then switch view — avoids "not added to page" error
+            main_stack = ft.Stack([app_layout, chat_container], expand=True)
+            _page.add(main_stack)
+            _page.update()
+
+            # Now it's safe to switch view
+            app_layout.set_view("Diet")
+
+        _page.clean()
+        _page.overlay.clear()
+        _page.update()
+        quiz = DietQuizView(_page, self.user_info, on_complete)
+        _page.add(quiz)
+        _page.update()    
     # ========== МЕТОДЫ ДЛЯ ДОБАВЛЕНИЯ В КАЛЕНДАРЬ ==========
     
     def add_meal_to_calendar(self, meal_name, day, meal_type):

@@ -173,7 +173,7 @@ def main(page: ft.Page):
             """Поднять chat FAB выше нижней панели магазина (80px + отступ)"""
             chat_fab_container.bottom = 110
             try:
-                chat_fab_container.update()
+                page.update()
             except Exception:
                 pass
 
@@ -181,7 +181,7 @@ def main(page: ft.Page):
             """Вернуть chat FAB на обычную позицию"""
             chat_fab_container.bottom = 20
             try:
-                chat_fab_container.update()
+                page.update()
             except Exception:
                 pass
 
@@ -196,6 +196,14 @@ def main(page: ft.Page):
         
         page.add(main_stack)
         page.update()
+
+        # Refresh credits badge now that appbar is on page
+        # (ensure_starter_credits ran before header was built)
+        try:
+            if page.appbar and hasattr(page.appbar, 'refresh_credits'):
+                page.appbar.refresh_credits()
+        except Exception:
+            pass
 
     # Start with login
     show_login()

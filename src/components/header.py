@@ -209,10 +209,20 @@ class Header(ft.AppBar):
         return "— cr"
 
     def refresh_credits(self):
-        """Вызывается после трат — обновляет badge в шапке."""
+        """Вызывается после трат/пополнения — обновляет badge в шапке."""
         try:
             self._credits_text.value = self._get_credits_str()
-            self._credits_text.update()
+            # ft.Text.update() inside AppBar is unreliable — update the
+            # parent container and then the whole page to guarantee render
+            try:
+                self._credits_badge.update()
+            except Exception:
+                pass
+            try:
+                if self.page_ref:
+                    self.page_ref.update()
+            except Exception:
+                pass
         except Exception:
             pass
 

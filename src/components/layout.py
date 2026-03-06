@@ -119,8 +119,14 @@ class AppLayout(ft.Row):
             self.content_area.content = self.diet_view
             self.content_area.update()
         elif self.content_area.content == self.grocery_view:
-            # Пересоздаём grocery view с обновлёнными данными
-            self.grocery_view = GroceryStore(page=self.page, user_info=self.user_info, on_refresh=lambda: self.refresh_grocery())
+            # Пересоздаём grocery view — сохраняем callbacks для FAB
+            old_show = getattr(self.grocery_view, 'on_panel_show', None)
+            old_hide = getattr(self.grocery_view, 'on_panel_hide', None)
+            self.grocery_view = GroceryStore(
+                page=self.page, user_info=self.user_info,
+                on_refresh=lambda: self.refresh_grocery(),
+                on_panel_show=old_show, on_panel_hide=old_hide,
+            )
             self.content_area.content = self.grocery_view
         else:
             self.content_area.update()
@@ -137,4 +143,3 @@ class AppLayout(ft.Row):
         else:
             self.sidebar.width = 0
         self.sidebar.update()
-

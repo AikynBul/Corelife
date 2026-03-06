@@ -4,6 +4,13 @@ from groq import Groq
 from dotenv import load_dotenv
 from datetime import datetime
 
+# USDA FoodData Central integration for accurate nutrition data
+try:
+    from services.usda_service import USDAService
+    _usda = USDAService()
+except Exception:
+    _usda = None
+
 load_dotenv()
 
 class DietAIService:
@@ -186,13 +193,42 @@ Each meal must have:
             # âœ… ÐÐžÐ’ÐžÐ•: ÐžÐ³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÐ¼ AI ÐºÑƒÐ¿Ð»ÐµÐ½Ð½Ñ‹Ð¼Ð¸ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð°Ð¼Ð¸ Ð¸Ð· Grocery Store
             if available_ingredients:
                 ingredient_list = ", ".join(available_ingredients)
+
+                # Enrich ingredient list with real USDA nutrition data if available
+                usda_context = ""
+                if _usda and _usda.is_available():
+                    print(f"[USDA] Looking up nutrition for {len(available_ingredients)} ingredients...")
+                    nutrition_data = _usda.get_ingredient_nutrition_list(available_ingredients)
+                    if nutrition_data:
+                        lines = []
+                        for ing, nd in nutrition_data.items():
+                            lines.append(
+                                f"  - {ing}: {nd['calories']} kcal, "
+                                f"P:{nd['protein']}g, C:{nd['carbs']}g, "
+                                f"F:{nd['fats']}g, Fiber:{nd['fiber']}g (per 100g)"
+                            )
+                        usda_context = (
+                            "\n\nREAL NUTRITION DATA (from USDA FoodData Central, per 100g):\n"
+                            + "\n".join(lines)
+                            + "\nUse these values to build nutritionally accurate meals."
+                        )
+
                 prompt += f"""
 
-IMPORTANT CONSTRAINT - USE ONLY AVAILABLE INGREDIENTS:
-The user has purchased these ingredients this week. You MUST create meals using combinations of these ingredients only:
+===GROCERY LINK CONSTRAINT — MANDATORY===
+The user enabled grocery-diet link. Build ALL meals using ONLY these purchased ingredients:
 {ingredient_list}
+{usda_context}
 
-Do NOT suggest ingredients that are not in this list. Be creative with what's available."""
+STRICT RULES:
+- Every single meal MUST use only ingredients from this list. No exceptions, no additions.
+- Use the real USDA nutrition values above to calculate accurate meal calories and macros.
+- If these ingredients are CLEARLY insufficient for goal="{goal}" or incompatible with dietary restrictions,
+  respond with ONLY this JSON (nothing else at all):
+  {{"error": true, "reason": "One sentence why these groceries cannot support goal={goal}"}}
+- Otherwise build the full 7-day meal plan JSON using ONLY the listed ingredients.
+=========================================
+"""
             
             print("Sending request to Groq API for meal plan generation...")
             
@@ -226,14 +262,30 @@ Do NOT suggest ingredients that are not in this list. Be creative with what's av
             response_text = response_text.strip()
             
             # ÐŸÐ°Ñ€ÑÐ¸Ð¼ JSON
-            plan = json.loads(response_text)
+            # Parse JSON — may be {"error": true, "reason": "..."} if groceries insufficient
+            parsed = json.loads(response_text)
+            if isinstance(parsed, dict) and parsed.get("error"):
+                print(f"[DietAI] Grocery error: {parsed.get('reason')}")
+                return parsed
             
-            print("âœ… Meal plan generated successfully!")
-            
+            print("Meal plan generated successfully!")
+
+            # Enrich plan with real USDA nutrition data
+            enriched_plan = parsed
+            if _usda and _usda.is_available():
+                try:
+                    print("[USDA] Enriching meal plan with real nutrition data...")
+                    enriched_plan = _usda.enrich_meal_plan(parsed)
+                    print("[USDA] Enrichment complete.")
+                except Exception as _ue:
+                    print(f"[USDA] Enrichment failed (using AI estimates): {_ue}")
+
             return {
                 "goal": goal,
                 "target_calories": target_calories,
-                "plan": plan,
+                "plan": enriched_plan,
+                "daily_avg": enriched_plan.get("daily_avg"),
+                "usda_enriched": enriched_plan.get("usda_enriched", False),
                 "created_at": datetime.now().isoformat()
             }
             

@@ -463,20 +463,24 @@ class DietQuizView(ft.Column):
         # Сохраняем в БД
         try:
             store.save_diet_preferences(self.user_info["id"], self.answers)
-            
-            # Показываем успешное сообщение
-            snack = ft.SnackBar(
-                content=ft.Text("✅ Diet preferences saved successfully!"),
-                bgcolor=ft.Colors.GREEN_400
-            )
-            self.page_ref.overlay.append(snack); snack.open = True; self.page_ref.update()
-            
-            # Вызываем callback
+            print(f"[DietQuiz] Preferences saved for user {self.user_info['id']}")
+
+            # Show success snack BEFORE calling on_complete
+            # (on_complete will page.clean() after a short delay — snack gets to render)
+            self.page_ref.open(ft.SnackBar(
+                content=ft.Text("✅ Diet preferences saved!"),
+                bgcolor=ft.Colors.GREEN_400,
+                duration=800,
+            ))
+            self.page_ref.update()
+
+            # Вызываем callback (handles the page rebuild internally with delay)
             if self.on_complete:
                 self.on_complete()
                 
         except Exception as e:
             print(f"Error saving diet preferences: {e}")
+            import traceback; traceback.print_exc()
             snack = ft.SnackBar(
                 content=ft.Text("❌ Failed to save preferences. Please try again."),
                 bgcolor=ft.Colors.RED_400
