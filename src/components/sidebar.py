@@ -3,6 +3,7 @@ import datetime
 import calendar
 from components.event_dialog import EventDialog
 from utils.translations import translations
+from data.store import store
 
 class Sidebar(ft.Container):
     def __init__(self, on_view_change=None, on_filter_change=None, on_refresh=None, on_date_click=None):
@@ -39,6 +40,11 @@ class Sidebar(ft.Container):
                     on_click=lambda e: self.on_view_change("FAQ") if self.on_view_change else None,
                     icon=ft.Icons.HELP_CENTER,
                 ),
+                ft.TextButton(
+                    "Admin",
+                    on_click=lambda e: self.on_view_change("Admin") if self.on_view_change else None,
+                    icon=ft.Icons.ADMIN_PANEL_SETTINGS,
+                ) if store.is_admin_account(store.user_id) else ft.Container(),
 
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 self.build_mini_calendar(),

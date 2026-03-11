@@ -382,6 +382,8 @@ class Header(ft.AppBar):
     def show_settings(self, e):
         """✅ УЛУЧШЕННЫЙ дизайн Settings диалога"""
         from utils.translations import translations
+        from components.rate_dialog import RateDialog
+        from components.bug_report_dialog import BugReportDialog
         
         def change_language(e):
             lang_code = e.control.value
@@ -390,7 +392,15 @@ class Header(ft.AppBar):
             if self.on_language_change:
                 self.on_language_change()
             self.page_ref.close(dialog)
-        
+
+        def open_rate_dialog(_):
+            self.page_ref.close(dialog)
+            self.page_ref.open(RateDialog(self.page_ref, self.user_info))
+
+        def open_bug_report(_):
+            self.page_ref.close(dialog)
+            self.page_ref.open(BugReportDialog(self.page_ref, self.user_info))
+
         def toggle_theme_mode(e):
             """Переключение темы из Settings"""
             self.toggle_theme(e)
@@ -534,12 +544,12 @@ class Header(ft.AppBar):
                             ),
                             ft.TextButton(
                                 "🐛 Report Bug",
-                                on_click=lambda _: print("Report bug"),
+                                on_click=open_bug_report,
                                 icon=ft.Icons.BUG_REPORT,
                             ),
                             ft.TextButton(
                                 "⭐ Rate Us",
-                                on_click=lambda _: print("Rate app"),
+                                on_click=open_rate_dialog,
                                 icon=ft.Icons.STAR_OUTLINE,
                             ),
                         ]),
@@ -566,3 +576,5 @@ class Header(ft.AppBar):
             actions_alignment=ft.MainAxisAlignment.END,
         )
         self.page_ref.open(dialog)
+
+

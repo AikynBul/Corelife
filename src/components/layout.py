@@ -7,6 +7,7 @@ from components.account_view import AccountView
 from components.diet_view import DietView
 from components.grocery_store import GroceryStore  # ✅ НОВЫЙ ИМПОРТ
 from components.faq_view import FAQView
+from components.admin_dashboard import AdminDashboard
 
 
 class AppLayout(ft.Row):
@@ -41,6 +42,7 @@ class AppLayout(ft.Row):
         self.account_view = AccountView(self.user_info, self.on_logout, page=self.page)
         self.diet_view = DietView(self.page, self.user_info)
         self.grocery_view = GroceryStore(page=self.page, user_info=self.user_info, on_refresh=lambda: self.refresh_grocery())  # ✅ CALLBACK
+        self.admin_view = None
 
         # Main Content Area
         self.content_area = ft.Container(
@@ -85,14 +87,25 @@ class AppLayout(ft.Row):
             self.content_area.content = self.diet_view
         elif view_name == "FAQ":
             self.content_area.content = self.faq_view
+        elif view_name == "Admin":
+            self.admin_view = AdminDashboard(self.page, self.user_info)
+            self.content_area.content = self.admin_view
 
-        self.content_area.update()
+        self._safe_update(self.content_area)
 
     def go_to_day(self, date):
         """Переход к дневному виду с выбранной датой"""
         self.day_view.current_date = date
         self.set_view("Day")
-        self.sidebar.update()
+        self._safe_update(self.sidebar)
+
+    @staticmethod
+    def _safe_update(control):
+        try:
+            control.update()
+        except AssertionError:
+            # Control may be configured before being attached to page.
+            pass
 
     def update_filters(self, filters):
         """Обновляет фильтры событий/задач"""
@@ -117,7 +130,7 @@ class AppLayout(ft.Row):
         elif self.content_area.content == self.diet_view:
             self.diet_view = DietView(self.page, self.user_info)
             self.content_area.content = self.diet_view
-            self.content_area.update()
+            self._safe_update(self.content_area)
         elif self.content_area.content == self.grocery_view:
             # Пересоздаём grocery view — сохраняем callbacks для FAB
             old_show = getattr(self.grocery_view, 'on_panel_show', None)
@@ -129,12 +142,12 @@ class AppLayout(ft.Row):
             )
             self.content_area.content = self.grocery_view
         else:
-            self.content_area.update()
+            self._safe_update(self.content_area)
     
     def refresh_grocery(self):
         """✅ НОВОЕ: Обновить grocery view"""
         self.grocery_view.build_ui()
-        self.content_area.update()
+        self._safe_update(self.content_area)
 
     def toggle_sidebar(self):
         """Скрывает/показывает сайдбар"""
@@ -142,4 +155,8 @@ class AppLayout(ft.Row):
             self.sidebar.width = 250
         else:
             self.sidebar.width = 0
-        self.sidebar.update()
+        self._safe_update(self.sidebar)
+
+
+
+

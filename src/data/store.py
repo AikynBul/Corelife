@@ -1,4 +1,4 @@
-import os
+﻿import os
 from datetime import datetime, timedelta
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -7,7 +7,7 @@ load_dotenv()
 
 
 def get_monday_of_week(date):
-    """Возвращает понедельник текущей недели"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ РїРѕРЅРµРґРµР»СЊРЅРёРє С‚РµРєСѓС‰РµР№ РЅРµРґРµР»Рё"""
     return date - timedelta(days=date.weekday())
 
 
@@ -32,14 +32,14 @@ class EventStore:
     }
 
     OPTIMAL_TIMES = {
-        "Study": {"start": 17, "end": 21},      # Вечер 17:00-21:00
-        "Exercise": {"start": 14, "end": 18},   # После обеда 14:00-18:00
-        "Sleep": {"start": 22, "end": 7},       # Ночь 22:00-07:00
-        "Food": {"start": 12, "end": 14},       # Обед 12:00-14:00
-        "Work": {"start": 9, "end": 17},        # Рабочий день 9:00-17:00
-        "Social": {"start": 18, "end": 22},     # Вечер 18:00-22:00
-        "Personal": {"start": 8, "end": 22},    # Гибкое время
-        "Health": {"start": 9, "end": 18}       # Днём 9:00-18:00
+        "Study": {"start": 17, "end": 21},      # Р’РµС‡РµСЂ 17:00-21:00
+        "Exercise": {"start": 14, "end": 18},   # РџРѕСЃР»Рµ РѕР±РµРґР° 14:00-18:00
+        "Sleep": {"start": 22, "end": 7},       # РќРѕС‡СЊ 22:00-07:00
+        "Food": {"start": 12, "end": 14},       # РћР±РµРґ 12:00-14:00
+        "Work": {"start": 9, "end": 17},        # Р Р°Р±РѕС‡РёР№ РґРµРЅСЊ 9:00-17:00
+        "Social": {"start": 18, "end": 22},     # Р’РµС‡РµСЂ 18:00-22:00
+        "Personal": {"start": 8, "end": 22},    # Р“РёР±РєРѕРµ РІСЂРµРјСЏ
+        "Health": {"start": 9, "end": 18}       # Р”РЅС‘Рј 9:00-18:00
     }
 
     def _connect(self):
@@ -212,7 +212,7 @@ class EventStore:
         return results
 
     def get_events_for_date(self, date):
-        """Получить все события для конкретной даты (YYYY-MM-DD)"""
+        """РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ СЃРѕР±С‹С‚РёСЏ РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕР№ РґР°С‚С‹ (YYYY-MM-DD)"""
         if self.collection is None or not self.user_id:
             return []
         
@@ -224,7 +224,7 @@ class EventStore:
         
         events = self.get_events_for_month(target_date.year, target_date.month)
         
-        # Фильтруем только события на эту дату
+        # Р¤РёР»СЊС‚СЂСѓРµРј С‚РѕР»СЊРєРѕ СЃРѕР±С‹С‚РёСЏ РЅР° СЌС‚Сѓ РґР°С‚Сѓ
         result = []
         for event in events:
             try:
@@ -239,12 +239,12 @@ class EventStore:
     
     def get_free_slots(self, date, duration_hours=1, category="Personal"):
         """
-        Найти свободные слоты в указанную дату
+        РќР°Р№С‚Рё СЃРІРѕР±РѕРґРЅС‹Рµ СЃР»РѕС‚С‹ РІ СѓРєР°Р·Р°РЅРЅСѓСЋ РґР°С‚Сѓ
         
         Args:
-            date: дата в формате YYYY-MM-DD
-            duration_hours: продолжительность в часах
-            category: категория для определения оптимального времени
+            date: РґР°С‚Р° РІ С„РѕСЂРјР°С‚Рµ YYYY-MM-DD
+            duration_hours: РїСЂРѕРґРѕР»Р¶РёС‚РµР»СЊРЅРѕСЃС‚СЊ РІ С‡Р°СЃР°С…
+            category: РєР°С‚РµРіРѕСЂРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ РѕРїС‚РёРјР°Р»СЊРЅРѕРіРѕ РІСЂРµРјРµРЅРё
         
         Returns:
             list of dicts: [{"start": "HH:MM", "end": "HH:MM", "score": int}, ...]
@@ -253,12 +253,12 @@ class EventStore:
         
         events = self.get_events_for_date(date)
         
-        # Получаем оптимальное время для категории
+        # РџРѕР»СѓС‡Р°РµРј РѕРїС‚РёРјР°Р»СЊРЅРѕРµ РІСЂРµРјСЏ РґР»СЏ РєР°С‚РµРіРѕСЂРёРё
         optimal = self.OPTIMAL_TIMES.get(category, {"start": 9, "end": 21})
         optimal_start = optimal["start"]
         optimal_end = optimal["end"]
         
-        # Создаем список занятых часов
+        # РЎРѕР·РґР°РµРј СЃРїРёСЃРѕРє Р·Р°РЅСЏС‚С‹С… С‡Р°СЃРѕРІ
         busy_slots = []
         for event in events:
             try:
@@ -268,10 +268,10 @@ class EventStore:
             except (ValueError, IndexError):
                 continue
         
-        # Находим свободные слоты в оптимальное время
+        # РќР°С…РѕРґРёРј СЃРІРѕР±РѕРґРЅС‹Рµ СЃР»РѕС‚С‹ РІ РѕРїС‚РёРјР°Р»СЊРЅРѕРµ РІСЂРµРјСЏ
         free_slots = []
         
-        # Для сна особая логика (ночное время)
+        # Р”Р»СЏ СЃРЅР° РѕСЃРѕР±Р°СЏ Р»РѕРіРёРєР° (РЅРѕС‡РЅРѕРµ РІСЂРµРјСЏ)
         if category == "Sleep":
             for hour in range(22, 24):
                 if hour not in busy_slots:
@@ -282,7 +282,7 @@ class EventStore:
                         "score": score
                     })
         else:
-            # Обычная логика для остальных категорий
+            # РћР±С‹С‡РЅР°СЏ Р»РѕРіРёРєР° РґР»СЏ РѕСЃС‚Р°Р»СЊРЅС‹С… РєР°С‚РµРіРѕСЂРёР№
             for hour in range(optimal_start, optimal_end):
                 if hour not in busy_slots and hour + duration_hours <= optimal_end:
                     mid_time = (optimal_start + optimal_end) / 2
@@ -295,7 +295,7 @@ class EventStore:
                         "score": max(score, 1)
                     })
         
-        # Если нет слотов в оптимальное время, ищем в любое время (8:00 - 22:00)
+        # Р•СЃР»Рё РЅРµС‚ СЃР»РѕС‚РѕРІ РІ РѕРїС‚РёРјР°Р»СЊРЅРѕРµ РІСЂРµРјСЏ, РёС‰РµРј РІ Р»СЋР±РѕРµ РІСЂРµРјСЏ (8:00 - 22:00)
         if not free_slots:
             for hour in range(8, 22):
                 if hour not in busy_slots:
@@ -309,19 +309,19 @@ class EventStore:
         return free_slots
 
     def save_diet_preferences(self, user_id, preferences):
-        """Сохраняет предпочтения пользователя по диете"""
+        """РЎРѕС…СЂР°РЅСЏРµС‚ РїСЂРµРґРїРѕС‡С‚РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ РґРёРµС‚Рµ"""
         try:
-            # ✅ ИСПРАВЛЕНО: Конвертируем все списки в строки для совместимости с MongoDB
-            # MongoDB может хранить списки, но иногда возникают проблемы с хешированием
+            # вњ… РРЎРџР РђР’Р›Р•РќРћ: РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј РІСЃРµ СЃРїРёСЃРєРё РІ СЃС‚СЂРѕРєРё РґР»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё СЃ MongoDB
+            # MongoDB РјРѕР¶РµС‚ С…СЂР°РЅРёС‚СЊ СЃРїРёСЃРєРё, РЅРѕ РёРЅРѕРіРґР° РІРѕР·РЅРёРєР°СЋС‚ РїСЂРѕР±Р»РµРјС‹ СЃ С…РµС€РёСЂРѕРІР°РЅРёРµРј
             
-            # Создаём копию чтобы не изменять оригинальный словарь
+            # РЎРѕР·РґР°С‘Рј РєРѕРїРёСЋ С‡С‚РѕР±С‹ РЅРµ РёР·РјРµРЅСЏС‚СЊ РѕСЂРёРіРёРЅР°Р»СЊРЅС‹Р№ СЃР»РѕРІР°СЂСЊ
             safe_preferences = {}
             
             for key, value in preferences.items():
-                # Если значение - список, сохраняем как есть (MongoDB поддерживает массивы)
-                # Но убеждаемся что это простые типы данных
+                # Р•СЃР»Рё Р·РЅР°С‡РµРЅРёРµ - СЃРїРёСЃРѕРє, СЃРѕС…СЂР°РЅСЏРµРј РєР°Рє РµСЃС‚СЊ (MongoDB РїРѕРґРґРµСЂР¶РёРІР°РµС‚ РјР°СЃСЃРёРІС‹)
+                # РќРѕ СѓР±РµР¶РґР°РµРјСЃСЏ С‡С‚Рѕ СЌС‚Рѕ РїСЂРѕСЃС‚С‹Рµ С‚РёРїС‹ РґР°РЅРЅС‹С…
                 if isinstance(value, list):
-                    # Конвертируем все элементы списка в строки
+                    # РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј РІСЃРµ СЌР»РµРјРµРЅС‚С‹ СЃРїРёСЃРєР° РІ СЃС‚СЂРѕРєРё
                     safe_preferences[key] = [str(item) for item in value]
                 else:
                     safe_preferences[key] = str(value)
@@ -339,7 +339,7 @@ class EventStore:
             return False
 
     def get_diet_preferences(self, user_id):
-        """Получает предпочтения пользователя по диете"""
+        """РџРѕР»СѓС‡Р°РµС‚ РїСЂРµРґРїРѕС‡С‚РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ РґРёРµС‚Рµ"""
         try:
             user = self.db.users.find_one({"_id": user_id})
             if user and "diet_preferences" in user:
@@ -350,7 +350,7 @@ class EventStore:
             return None
 
     def save_user_goals(self, user_id, goals):
-        """Сохраняет цели пользователя (time_management, diet)"""
+        """РЎРѕС…СЂР°РЅСЏРµС‚ С†РµР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (time_management, diet)"""
         try:
             self.db.users.update_one(
                 {"_id": user_id},
@@ -366,7 +366,7 @@ class EventStore:
             return False
 
     def get_user_goals(self, user_id):
-        """Получает цели пользователя"""
+        """РџРѕР»СѓС‡Р°РµС‚ С†РµР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
         try:
             user = self.db.users.find_one({"_id": user_id})
             if user and "goals" in user:
@@ -377,7 +377,7 @@ class EventStore:
             return []
 
     def has_completed_onboarding(self, user_id):
-        """Проверяет прошёл ли пользователь онбординг"""
+        """РџСЂРѕРІРµСЂСЏРµС‚ РїСЂРѕС€С‘Р» Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕРЅР±РѕСЂРґРёРЅРі"""
         try:
             user = self.db.users.find_one({"_id": user_id})
             if user:
@@ -388,27 +388,27 @@ class EventStore:
             return False
     def save_weekly_meal_plan(self, user_id, meal_plan_data):
         """
-        Сохраняет план питания на неделю.
+        РЎРѕС…СЂР°РЅСЏРµС‚ РїР»Р°РЅ РїРёС‚Р°РЅРёСЏ РЅР° РЅРµРґРµР»СЋ.
         
         Args:
-            user_id (str): ID пользователя
-            meal_plan_data (dict): План с ключами goal, target_calories, plan, created_at
+            user_id (str): ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+            meal_plan_data (dict): РџР»Р°РЅ СЃ РєР»СЋС‡Р°РјРё goal, target_calories, plan, created_at
         
         Returns:
-            bool: True если успешно
+            bool: True РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
         """
         try:
-            # Добавляем user_id
+            # Р”РѕР±Р°РІР»СЏРµРј user_id
             meal_plan_data["user_id"] = user_id
             
-            # Сохраняем или обновляем
+            # РЎРѕС…СЂР°РЅСЏРµРј РёР»Рё РѕР±РЅРѕРІР»СЏРµРј
             self.db.meal_plans.update_one(
                 {"user_id": user_id},
                 {"$set": meal_plan_data},
                 upsert=True
             )
             
-            print(f"✅ Meal plan saved for user {user_id}")
+            print(f"вњ… Meal plan saved for user {user_id}")
             return True
             
         except Exception as e:
@@ -417,19 +417,19 @@ class EventStore:
 
     def get_weekly_meal_plan(self, user_id):
         """
-        Получает сохранённый план питания.
+        РџРѕР»СѓС‡Р°РµС‚ СЃРѕС…СЂР°РЅС‘РЅРЅС‹Р№ РїР»Р°РЅ РїРёС‚Р°РЅРёСЏ.
         
         Args:
-            user_id (str): ID пользователя
+            user_id (str): ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         
         Returns:
-            dict: План питания или None
+            dict: РџР»Р°РЅ РїРёС‚Р°РЅРёСЏ РёР»Рё None
         """
         try:
             plan = self.db.meal_plans.find_one({"user_id": user_id})
             
             if plan:
-                # Удаляем _id для удобства
+                # РЈРґР°Р»СЏРµРј _id РґР»СЏ СѓРґРѕР±СЃС‚РІР°
                 plan.pop("_id", None)
                 return plan
             
@@ -441,19 +441,19 @@ class EventStore:
 
     def replace_meal_in_plan(self, user_id, day, meal_type, new_meal):
         """
-        Заменяет конкретное блюдо в плане.
+        Р—Р°РјРµРЅСЏРµС‚ РєРѕРЅРєСЂРµС‚РЅРѕРµ Р±Р»СЋРґРѕ РІ РїР»Р°РЅРµ.
         
         Args:
-            user_id (str): ID пользователя
-            day (str): День недели (monday, tuesday, ...)
-            meal_type (str): Тип приёма пищи (breakfast, lunch, dinner, snack)
-            new_meal (dict): Новое блюдо с ключами name, calories, protein, carbs, fats
+            user_id (str): ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+            day (str): Р”РµРЅСЊ РЅРµРґРµР»Рё (monday, tuesday, ...)
+            meal_type (str): РўРёРї РїСЂРёС‘РјР° РїРёС‰Рё (breakfast, lunch, dinner, snack)
+            new_meal (dict): РќРѕРІРѕРµ Р±Р»СЋРґРѕ СЃ РєР»СЋС‡Р°РјРё name, calories, protein, carbs, fats
         
         Returns:
-            bool: True если успешно
+            bool: True РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
         """
         try:
-            # Обновляем конкретное блюдо
+            # РћР±РЅРѕРІР»СЏРµРј РєРѕРЅРєСЂРµС‚РЅРѕРµ Р±Р»СЋРґРѕ
             update_path = f"plan.{day}.{meal_type}"
             
             result = self.db.meal_plans.update_one(
@@ -462,10 +462,10 @@ class EventStore:
             )
             
             if result.modified_count > 0:
-                print(f"✅ Replaced {day}'s {meal_type}")
+                print(f"вњ… Replaced {day}'s {meal_type}")
                 return True
             else:
-                print(f"⚠️ No meal plan found to update")
+                print(f"вљ пёЏ No meal plan found to update")
                 return False
             
         except Exception as e:
@@ -474,22 +474,22 @@ class EventStore:
 
     def delete_meal_plan(self, user_id):
         """
-        Удаляет план питания пользователя.
+        РЈРґР°Р»СЏРµС‚ РїР»Р°РЅ РїРёС‚Р°РЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
         
         Args:
-            user_id (str): ID пользователя
+            user_id (str): ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         
         Returns:
-            bool: True если успешно
+            bool: True РµСЃР»Рё СѓСЃРїРµС€РЅРѕ
         """
         try:
             result = self.db.meal_plans.delete_one({"user_id": user_id})
             
             if result.deleted_count > 0:
-                print(f"✅ Meal plan deleted for user {user_id}")
+                print(f"вњ… Meal plan deleted for user {user_id}")
                 return True
             else:
-                print(f"⚠️ No meal plan found to delete")
+                print(f"вљ пёЏ No meal plan found to delete")
                 return False
             
         except Exception as e:
@@ -499,7 +499,7 @@ class EventStore:
     # ============= GROCERY STORE METHODS =============
 
     def set_user_budget(self, user_id, budget):
-        """Установить недельный бюджет на продукты"""
+        """РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РЅРµРґРµР»СЊРЅС‹Р№ Р±СЋРґР¶РµС‚ РЅР° РїСЂРѕРґСѓРєС‚С‹"""
         if self.db is None:
             return False
         
@@ -529,7 +529,7 @@ class EventStore:
             return False
 
     def get_user_groceries(self, user_id):
-        """Получить данные о продуктах текущей недели"""
+        """РџРѕР»СѓС‡РёС‚СЊ РґР°РЅРЅС‹Рµ Рѕ РїСЂРѕРґСѓРєС‚Р°С… С‚РµРєСѓС‰РµР№ РЅРµРґРµР»Рё"""
         if self.db is None:
             return None
         
@@ -542,14 +542,14 @@ class EventStore:
         })
 
     def update_cart(self, user_id, cart):
-        """Обновить корзину покупок"""
+        """РћР±РЅРѕРІРёС‚СЊ РєРѕСЂР·РёРЅСѓ РїРѕРєСѓРїРѕРє"""
         if self.db is None:
             return False
         
         week_start = get_monday_of_week(datetime.now().date())
         week_start_str = week_start.strftime("%Y-%m-%d")
         
-        # Рассчитываем subtotal
+        # Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј subtotal
         subtotal = sum(item.get("total", 0) for item in cart)
         
         try:
@@ -566,8 +566,8 @@ class EventStore:
             return False
 
     def confirm_purchase(self, user_id):
-        """Подтвердить покупку.
-        Сохраняет cart -> purchased_cart, очищает cart/subtotal, накапливает spent."""
+        """РџРѕРґС‚РІРµСЂРґРёС‚СЊ РїРѕРєСѓРїРєСѓ.
+        РЎРѕС…СЂР°РЅСЏРµС‚ cart -> purchased_cart, РѕС‡РёС‰Р°РµС‚ cart/subtotal, РЅР°РєР°РїР»РёРІР°РµС‚ spent."""
         if self.db is None:
             return False
         grocery = self.get_user_groceries(user_id)
@@ -599,19 +599,19 @@ class EventStore:
             return False
 
     def get_week_range(self):
-        """Возвращает диапазон текущей недели (Monday-Sunday)"""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ РґРёР°РїР°Р·РѕРЅ С‚РµРєСѓС‰РµР№ РЅРµРґРµР»Рё (Monday-Sunday)"""
         today = datetime.now().date()
         monday = get_monday_of_week(today)
         sunday = monday + timedelta(days=6)
         
-        # Форматируем: "Feb 10-16"
+        # Р¤РѕСЂРјР°С‚РёСЂСѓРµРј: "Feb 10-16"
         if monday.month == sunday.month:
             return f"{monday.strftime('%b %d')}-{sunday.day}"
         else:
             return f"{monday.strftime('%b %d')}-{sunday.strftime('%b %d')}"
     
     def initialize_starter_inventory(self, user_id):
-        """Дать пользователю стартовый инвентарь ВСЕХ продуктов"""
+        """Р”Р°С‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ СЃС‚Р°СЂС‚РѕРІС‹Р№ РёРЅРІРµРЅС‚Р°СЂСЊ Р’РЎР•РҐ РїСЂРѕРґСѓРєС‚РѕРІ"""
         from data.products import PRODUCTS
         
         if self.db is None:
@@ -620,12 +620,12 @@ class EventStore:
         week_start = get_monday_of_week(datetime.now().date())
         week_start_str = week_start.strftime("%Y-%m-%d")
         
-        # Собираем ВСЕ продукты
+        # РЎРѕР±РёСЂР°РµРј Р’РЎР• РїСЂРѕРґСѓРєС‚С‹
         starter_items = []
         
         for category, products in PRODUCTS.items():
             for product in products:
-                # Даём по 10 единиц каждого продукта
+                # Р”Р°С‘Рј РїРѕ 10 РµРґРёРЅРёС† РєР°Р¶РґРѕРіРѕ РїСЂРѕРґСѓРєС‚Р°
                 starter_items.append({
                     "product_id": product["id"],
                     "name": product["name"],
@@ -654,14 +654,14 @@ class EventStore:
                 }},
                 upsert=True
             )
-            print(f"✅ Starter inventory created: {len(starter_items)} items")
+            print(f"вњ… Starter inventory created: {len(starter_items)} items")
             return True
         except Exception as e:
             print(f"Error creating starter inventory: {e}")
             return False
     
     def update_purchased_items(self, user_id, cart_items, spent):
-        """Обновить purchased_cart после удаления товара из купленных."""
+        """РћР±РЅРѕРІРёС‚СЊ purchased_cart РїРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ С‚РѕРІР°СЂР° РёР· РєСѓРїР»РµРЅРЅС‹С…."""
         if self.db is None:
             return False
         week_start = get_monday_of_week(datetime.now().date())
@@ -677,17 +677,17 @@ class EventStore:
             return False
 
     def delete_account(self, user_id):
-        """Полностью удалить аккаунт пользователя и все его данные."""
+        """РџРѕР»РЅРѕСЃС‚СЊСЋ СѓРґР°Р»РёС‚СЊ Р°РєРєР°СѓРЅС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Рё РІСЃРµ РµРіРѕ РґР°РЅРЅС‹Рµ."""
         if self.db is None:
             return False, "Database not connected"
         try:
-            # Удаляем события
+            # РЈРґР°Р»СЏРµРј СЃРѕР±С‹С‚РёСЏ
             self.db.events.delete_many({"user_id": user_id})
-            # Удаляем планы питания
+            # РЈРґР°Р»СЏРµРј РїР»Р°РЅС‹ РїРёС‚Р°РЅРёСЏ
             self.db.meal_plans.delete_many({"user_id": user_id})
-            # Удаляем данные продуктового магазина
+            # РЈРґР°Р»СЏРµРј РґР°РЅРЅС‹Рµ РїСЂРѕРґСѓРєС‚РѕРІРѕРіРѕ РјР°РіР°Р·РёРЅР°
             self.db.grocery_budgets.delete_many({"user_id": user_id})
-            # Удаляем самого пользователя
+            # РЈРґР°Р»СЏРµРј СЃР°РјРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             result = self.db.users.delete_one({"_id": user_id})
             if result.deleted_count > 0:
                 self.user_id = None
@@ -700,7 +700,7 @@ class EventStore:
             return False, str(e)
 
     def update_username(self, user_id, new_name):
-        """Обновить имя пользователя."""
+        """РћР±РЅРѕРІРёС‚СЊ РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
         if self.db is None:
             return False, "Database not connected"
         try:
@@ -715,7 +715,7 @@ class EventStore:
 
 
     def save_avatar_url(self, user_id, avatar_url: str):
-        """Сохранить base64 аватарки пользователя."""
+        """РЎРѕС…СЂР°РЅРёС‚СЊ base64 Р°РІР°С‚Р°СЂРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
         if self.db is None:
             return False, "Database not connected"
         try:
@@ -731,7 +731,7 @@ class EventStore:
             return False, str(e)
 
     def get_avatar_url(self, user_id=None) -> str:
-        """Получить base64 аватарки пользователя."""
+        """РџРѕР»СѓС‡РёС‚СЊ base64 Р°РІР°С‚Р°СЂРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
         if self.db is None:
             return ""
         uid = user_id or self.user_id
@@ -749,7 +749,7 @@ class EventStore:
             return ""
 
     def change_password(self, user_id, current_password, new_password):
-        """Сменить пароль пользователя."""
+        """РЎРјРµРЅРёС‚СЊ РїР°СЂРѕР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
         if self.db is None:
             return False, "Database not connected"
         try:
@@ -757,11 +757,11 @@ class EventStore:
             user = self.db.users.find_one({"_id": user_id})
             if not user:
                 return False, "User not found"
-            # Проверяем текущий пароль
+            # РџСЂРѕРІРµСЂСЏРµРј С‚РµРєСѓС‰РёР№ РїР°СЂРѕР»СЊ
             hashed_current = hashlib.sha256(current_password.encode()).hexdigest()
             if user.get("password") != hashed_current:
                 return False, "Current password is incorrect"
-            # Устанавливаем новый
+            # РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅРѕРІС‹Р№
             hashed_new = hashlib.sha256(new_password.encode()).hexdigest()
             update_doc = {"$set": {"password": hashed_new}}
             self.db.users.update_one({"_id": user_id}, update_doc)
@@ -812,7 +812,7 @@ class EventStore:
             print(f"Error getting recurring completion: {e}")
             return None
     def mark_event_completed(self, event_id, completed: bool):
-        """Отметить событие/задачу как выполненное или нет."""
+        """РћС‚РјРµС‚РёС‚СЊ СЃРѕР±С‹С‚РёРµ/Р·Р°РґР°С‡Сѓ РєР°Рє РІС‹РїРѕР»РЅРµРЅРЅРѕРµ РёР»Рё РЅРµС‚."""
         if self.collection is None or not self.user_id:
             return False
         try:
@@ -831,8 +831,8 @@ class EventStore:
     # ============= CREDITS SYSTEM =============
 
     def ensure_starter_credits(self, user_id):
-        """Выдать 500 стартовых кредитов новому пользователю.
-        Читаем текущий баланс напрямую — если 0 или поля нет, принудительно ставим 500.
+        """Р’С‹РґР°С‚СЊ 500 СЃС‚Р°СЂС‚РѕРІС‹С… РєСЂРµРґРёС‚РѕРІ РЅРѕРІРѕРјСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ.
+        Р§РёС‚Р°РµРј С‚РµРєСѓС‰РёР№ Р±Р°Р»Р°РЅСЃ РЅР°РїСЂСЏРјСѓСЋ вЂ” РµСЃР»Рё 0 РёР»Рё РїРѕР»СЏ РЅРµС‚, РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ СЃС‚Р°РІРёРј 500.
         """
         if self.db is None:
             return
@@ -842,7 +842,7 @@ class EventStore:
                 print(f"[Credits] User {user_id} has {current} cr, no top-up needed")
                 return
 
-            # Balance is 0 or missing — set 500 unconditionally
+            # Balance is 0 or missing вЂ” set 500 unconditionally
             self.db.users.update_one(
                 {"_id": user_id},
                 {
@@ -863,7 +863,7 @@ class EventStore:
             print(f"Error in ensure_starter_credits: {e}")
 
     def get_credits(self, user_id):
-        """Получить текущий баланс кредитов."""
+        """РџРѕР»СѓС‡РёС‚СЊ С‚РµРєСѓС‰РёР№ Р±Р°Р»Р°РЅСЃ РєСЂРµРґРёС‚РѕРІ."""
         if self.db is None:
             return 0
         try:
@@ -874,14 +874,19 @@ class EventStore:
             return 0
 
     def spend_credits(self, user_id, amount, reason=""):
-        """Списать кредиты. Returns (success: bool, new_balance: int)."""
+        """Spend credits. Admin accounts have effectively unlimited credits."""
         if self.db is None:
             return False, 0
-        balance = self.get_credits(user_id)
-        if balance < amount:
-            print(f"[Credits] Not enough: have {balance}, need {amount}")
-            return False, balance
         try:
+            if self.is_admin_account(user_id):
+                current = self.get_credits(user_id)
+                print(f"[Admin] credits not spent (amount: {amount})")
+                return True, current
+
+            balance = self.get_credits(user_id)
+            if balance < amount:
+                print(f"[Credits] Not enough: have {balance}, need {amount}")
+                return False, balance
             update_doc = {
                 "$inc": {"credits": -amount},
                 "$push": {
@@ -899,10 +904,35 @@ class EventStore:
             return True, new_balance
         except Exception as e:
             print(f"Error spending credits: {e}")
-            return False, balance
+            return False, 0
 
+    def update_grocery_budget(self, user_id: str, amount: int) -> bool:
+        """Update grocery budget. Admin accounts have effectively unlimited budget."""
+        if self.db is None:
+            return False
+        try:
+            if self.is_admin_account(user_id):
+                print(f"[Admin] budget not spent (amount: {amount})")
+                return True
+
+            user = self.db.users.find_one({"_id": user_id})
+            if not user:
+                return False
+
+            current_budget = user.get("grocery_budget", 0)
+            new_budget = current_budget + amount
+            if new_budget < 0:
+                print(f"[Budget] Not enough. Have: {current_budget}, Need: {abs(amount)}")
+                return False
+
+            self.db.users.update_one({"_id": user_id}, {"$set": {"grocery_budget": new_budget}})
+            print(f"[Budget] Updated. New balance: {new_budget}")
+            return True
+        except Exception as e:
+            print(f"Error updating budget: {e}")
+            return False
     def add_credits(self, user_id, amount, reason=""):
-        """Начислить кредиты пользователю."""
+        """РќР°С‡РёСЃР»РёС‚СЊ РєСЂРµРґРёС‚С‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ."""
         if self.db is None:
             return False
         try:
@@ -924,7 +954,7 @@ class EventStore:
             return False
 
     def get_credits_history(self, user_id, limit=15):
-        """История операций с кредитами."""
+        """РСЃС‚РѕСЂРёСЏ РѕРїРµСЂР°С†РёР№ СЃ РєСЂРµРґРёС‚Р°РјРё."""
         if self.db is None:
             return []
         try:
@@ -937,128 +967,208 @@ class EventStore:
             print(f"Error getting credits history: {e}")
             return []
         
-    def grant_gamemode_privileges(self, user_id: str):
-        """
-        ✅ НОВОЕ: Выдаёт неограниченные права для аккаунта gamemode
-        
-        Args:
-            user_id: ID пользователя gamemode
-        """
+    def grant_admin_privileges(self, user_id: str):
+        """Grant admin privileges and unlimited resources."""
+        if self.db is None:
+            return False
         try:
-            from datetime import datetime
-            
-            # Устанавливаем бесконечные кредиты и деньги
             self.db.users.update_one(
                 {"_id": user_id},
                 {
                     "$set": {
+                        "is_admin": True,
+                        "admin_activated_at": datetime.now().isoformat(),
+                        "can_view_reports": True,
+                        "can_view_ratings": True,
                         "credits": 999999999,
                         "grocery_budget": 999999999,
-                        "is_moderator": True,
-                        "gamemode_activated_at": datetime.now().isoformat()
                     }
-                }
+                },
+                upsert=True
             )
-            
-            print(f"🔑 Gamemode privileges granted to user {user_id}")
-            print(f"💰 Credits: 999999999")
-            print(f"🛒 Budget: 999999999")
+            print(f"[Admin] privileges granted to user {user_id}")
+            print("[Admin] Credits: 999,999,999")
+            print("[Admin] Budget: 999,999,999")
             return True
-            
         except Exception as e:
-            print(f"❌ Error granting gamemode privileges: {e}")
+            print(f"Error granting admin privileges: {e}")
             return False
-
-    def is_gamemode_account(self, user_id: str) -> bool:
-        """
-        ✅ НОВОЕ: Проверяет является ли аккаунт gamemode
-        
-        Args:
-            user_id: ID пользователя
-            
-        Returns:
-            bool - True если gamemode аккаунт
-        """
+    def is_admin_account(self, user_id: str) -> bool:
+        """Check if user has admin role."""
+        if self.db is None or not user_id:
+            return False
         try:
             user = self.db.users.find_one({"_id": user_id})
-            if user:
-                return user.get("is_moderator", False)
-            return False
+            return bool(user and user.get("is_admin", False))
         except Exception as e:
-            print(f"❌ Error checking gamemode: {e}")
+            print(f"Error checking admin account: {e}")
+            return False
+
+    def save_user_rating(self, user_id: str, rating: float, comment: str = ""):
+        """Persist user app rating (supports 0.5 increments)."""
+        if self.db is None:
+            return False
+        try:
+            value = float(rating)
+            if value < 0.5 or value > 5:
+                return False
+            # allow only 0.5 steps: 0.5, 1.0, 1.5 ... 5.0
+            if int(value * 2) != value * 2:
+                return False
+
+            rating_data = {
+                "user_id": user_id,
+                "rating": value,
+                "comment": comment or "",
+                "created_at": datetime.now().isoformat(),
+                "status": "new",
+            }
+            self.db.ratings.insert_one(rating_data)
+            print(f"[Admin] Rating {value}/5 saved from user {user_id}")
+            return True
+        except Exception as e:
+            print(f"Error saving rating: {e}")
+            return False
+    def save_bug_report(self, user_id: str, bug_type: str, description: str):
+        """Persist bug report from user."""
+        if self.db is None:
+            return False
+        try:
+            report_data = {
+                "user_id": user_id,
+                "bug_type": bug_type,
+                "description": description,
+                "created_at": datetime.now().isoformat(),
+                "status": "new",  # new, in_progress, resolved, closed
+                "priority": "medium",  # low, medium, high, critical
+            }
+            self.db.bug_reports.insert_one(report_data)
+            print(f"[Admin] Bug report saved from user {user_id}")
+            return True
+        except Exception as e:
+            print(f"Error saving bug report: {e}")
+            return False
+
+    def get_all_ratings(self, status: str = None, limit: int = 100):
+        """Get ratings list for admin dashboard."""
+        if self.db is None:
+            return []
+        try:
+            query = {}
+            if status:
+                query["status"] = status
+            ratings = list(self.db.ratings.find(query).sort("created_at", -1).limit(limit))
+            for rating in ratings:
+                rating["id"] = str(rating.pop("_id"))
+            return ratings
+        except Exception as e:
+            print(f"Error getting ratings: {e}")
+            return []
+
+    def get_all_bug_reports(self, status: str = None, limit: int = 100):
+        """Get bug reports list for admin dashboard."""
+        if self.db is None:
+            return []
+        try:
+            query = {}
+            if status:
+                query["status"] = status
+            reports = list(self.db.bug_reports.find(query).sort("created_at", -1).limit(limit))
+            for report in reports:
+                report["id"] = str(report.pop("_id"))
+            return reports
+        except Exception as e:
+            print(f"Error getting bug reports: {e}")
+            return []
+
+    def update_report_status(self, report_id: str, new_status: str):
+        """Update bug report status by id."""
+        if self.db is None:
+            return False
+        try:
+            from bson.objectid import ObjectId
+
+            self.db.bug_reports.update_one(
+                {"_id": ObjectId(report_id)},
+                {"$set": {"status": new_status}}
+            )
+            return True
+        except Exception as e:
+            print(f"Error updating report status: {e}")
             return False
 
     def delete_user_completely(self, user_id: str):
         """
-        ✅ ИСПРАВЛЕНО: Полностью удаляет пользователя из всех коллекций
-        Теперь никнейм освобождается для повторного использования
+        вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ СѓРґР°Р»СЏРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· РІСЃРµС… РєРѕР»Р»РµРєС†РёР№
+        РўРµРїРµСЂСЊ РЅРёРєРЅРµР№Рј РѕСЃРІРѕР±РѕР¶РґР°РµС‚СЃСЏ РґР»СЏ РїРѕРІС‚РѕСЂРЅРѕРіРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
         
         Args:
-            user_id: ID пользователя для удаления
+            user_id: ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ СѓРґР°Р»РµРЅРёСЏ
         """
         try:
             from bson.objectid import ObjectId
             
-            # 1. Удаляем пользователя из users
+            # 1. РЈРґР°Р»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· users
             result = self.db.users.delete_one({"_id": user_id})
-            print(f"✅ Deleted user from users collection: {result.deleted_count}")
+            print(f"вњ… Deleted user from users collection: {result.deleted_count}")
             
-            # 2. Удаляем все события пользователя
+            # 2. РЈРґР°Р»СЏРµРј РІСЃРµ СЃРѕР±С‹С‚РёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             events_result = self.db.events.delete_many({"user_id": user_id})
-            print(f"✅ Deleted {events_result.deleted_count} events")
+            print(f"вњ… Deleted {events_result.deleted_count} events")
             
-            # 3. Удаляем предпочтения диеты
+            # 3. РЈРґР°Р»СЏРµРј РїСЂРµРґРїРѕС‡С‚РµРЅРёСЏ РґРёРµС‚С‹
             diet_result = self.db.diet_preferences.delete_many({"user_id": user_id})
-            print(f"✅ Deleted {diet_result.deleted_count} diet preferences")
+            print(f"вњ… Deleted {diet_result.deleted_count} diet preferences")
             
-            # 4. Удаляем историю покупок в магазине (если есть)
+            # 4. РЈРґР°Р»СЏРµРј РёСЃС‚РѕСЂРёСЋ РїРѕРєСѓРїРѕРє РІ РјР°РіР°Р·РёРЅРµ (РµСЃР»Рё РµСЃС‚СЊ)
             if "grocery_purchases" in self.db.list_collection_names():
                 grocery_result = self.db.grocery_purchases.delete_many({"user_id": user_id})
-                print(f"✅ Deleted {grocery_result.deleted_count} grocery purchases")
+                print(f"вњ… Deleted {grocery_result.deleted_count} grocery purchases")
             
-            # 5. Удаляем историю транзакций кредитов (если есть)
+            # 5. РЈРґР°Р»СЏРµРј РёСЃС‚РѕСЂРёСЋ С‚СЂР°РЅР·Р°РєС†РёР№ РєСЂРµРґРёС‚РѕРІ (РµСЃР»Рё РµСЃС‚СЊ)
             if "credit_transactions" in self.db.list_collection_names():
                 credit_result = self.db.credit_transactions.delete_many({"user_id": user_id})
-                print(f"✅ Deleted {credit_result.deleted_count} credit transactions")
+                print(f"вњ… Deleted {credit_result.deleted_count} credit transactions")
             
-            print(f"🗑️ User {user_id} completely deleted - username is now available")
+            print(f"рџ—‘пёЏ User {user_id} completely deleted - username is now available")
             return True
             
         except Exception as e:
-            print(f"❌ Error deleting user: {e}")
+            print(f"вќЊ Error deleting user: {e}")
             return False
 
     def check_username_available(self, username: str, exclude_user_id: str = None) -> bool:
         """
-        ✅ ИСПРАВЛЕНО: Проверяет доступность никнейма (учитывая удалённых пользователей)
+        вњ… РРЎРџР РђР’Р›Р•РќРћ: РџСЂРѕРІРµСЂСЏРµС‚ РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ РЅРёРєРЅРµР№РјР° (СѓС‡РёС‚С‹РІР°СЏ СѓРґР°Р»С‘РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№)
         
         Args:
-            username: Никнейм для проверки
-            exclude_user_id: ID пользователя которого нужно исключить из проверки (для редактирования)
+            username: РќРёРєРЅРµР№Рј РґР»СЏ РїСЂРѕРІРµСЂРєРё
+            exclude_user_id: ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РєРѕС‚РѕСЂРѕРіРѕ РЅСѓР¶РЅРѕ РёСЃРєР»СЋС‡РёС‚СЊ РёР· РїСЂРѕРІРµСЂРєРё (РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ)
             
         Returns:
-            bool - True если никнейм доступен
+            bool - True РµСЃР»Рё РЅРёРєРЅРµР№Рј РґРѕСЃС‚СѓРїРµРЅ
         """
         try:
             query = {"username": username}
             
-            # Исключаем текущего пользователя при редактировании профиля
+            # РСЃРєР»СЋС‡Р°РµРј С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїСЂРё СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРё РїСЂРѕС„РёР»СЏ
             if exclude_user_id:
                 query["_id"] = {"$ne": exclude_user_id}
             
             existing_user = self.db.users.find_one(query)
             
             if existing_user:
-                print(f"❌ Username '{username}' is already taken")
+                print(f"вќЊ Username '{username}' is already taken")
                 return False
             else:
-                print(f"✅ Username '{username}' is available")
+                print(f"вњ… Username '{username}' is available")
                 return True
                 
         except Exception as e:
-            print(f"❌ Error checking username: {e}")
+            print(f"вќЊ Error checking username: {e}")
             return False
 
 
 # Global instance
 store = EventStore()
+

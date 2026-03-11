@@ -1,4 +1,4 @@
-import os
+﻿import os
 import flet as ft
 from components.layout import AppLayout
 from components.header import Header
@@ -12,29 +12,29 @@ from data.store import store
 def main(page: ft.Page):
     page.title = "Corelife"
     
-    # ✅ ИСПРАВЛЕНО: Правильная установка иконки для Flet приложения
-    # Flet требует путь к .ico или .png файлу
+    # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџСЂР°РІРёР»СЊРЅР°СЏ СѓСЃС‚Р°РЅРѕРІРєР° РёРєРѕРЅРєРё РґР»СЏ Flet РїСЂРёР»РѕР¶РµРЅРёСЏ
+    # Flet С‚СЂРµР±СѓРµС‚ РїСѓС‚СЊ Рє .ico РёР»Рё .png С„Р°Р№Р»Сѓ
     icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "photos", "Logo_Corelife.png"))
     
-    # Проверяем разные варианты имени файла
+    # РџСЂРѕРІРµСЂСЏРµРј СЂР°Р·РЅС‹Рµ РІР°СЂРёР°РЅС‚С‹ РёРјРµРЅРё С„Р°Р№Р»Р°
     if not os.path.exists(icon_path):
         icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "photos", "Logo Corelife.png"))
     
     if not os.path.exists(icon_path):
-        # Пробуем в корне проекта
+        # РџСЂРѕР±СѓРµРј РІ РєРѕСЂРЅРµ РїСЂРѕРµРєС‚Р°
         icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "photos", "Logo_Corelife.png"))
     
-    # ✅ ПРАВИЛЬНЫЙ СПОСОБ установки иконки в Flet
+    # вњ… РџР РђР’РР›Р¬РќР«Р™ РЎРџРћРЎРћР‘ СѓСЃС‚Р°РЅРѕРІРєРё РёРєРѕРЅРєРё РІ Flet
     if os.path.exists(icon_path):
         try:
-            # Для desktop приложений
+            # Р”Р»СЏ desktop РїСЂРёР»РѕР¶РµРЅРёР№
             page.window_icon = icon_path
-            print(f"✅ Logo loaded: {icon_path}")
+            print(f"вњ… Logo loaded: {icon_path}")
         except Exception as e:
-            print(f"⚠️ Could not set icon: {e}")
+            print(f"вљ пёЏ Could not set icon: {e}")
     else:
-        print(f"❌ Logo file not found. Tried: {icon_path}")
-        print("📁 Please ensure Logo_Corelife.png is in the photos/ folder")
+        print(f"вќЊ Logo file not found. Tried: {icon_path}")
+        print("рџ“Ѓ Please ensure Logo_Corelife.png is in the photos/ folder")
     
     page.theme_mode = ft.ThemeMode.LIGHT
     
@@ -50,18 +50,18 @@ def main(page: ft.Page):
     )
 
     def on_login(user_info):
-        """Обработка входа пользователя"""
+        """РћР±СЂР°Р±РѕС‚РєР° РІС…РѕРґР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
         store.set_user(user_info["id"])
         
-        # ✅ НОВОЕ: Проверка на gamemode аккаунт (модератор)
-        if user_info.get("username") == "gamemode":
-            print("🔑 Gamemode account detected - granting unlimited privileges")
-            store.grant_gamemode_privileges(user_info["id"])
+
+        if user_info.get("username") in ["admin", "administrator", "support"]:
+            print("[Admin] privileged account detected")
+            store.grant_admin_privileges(user_info["id"])
         
-        # Выдаём 500 стартовых кредитов если поля credits ещё нет
+        # Р’С‹РґР°С‘Рј 500 СЃС‚Р°СЂС‚РѕРІС‹С… РєСЂРµРґРёС‚РѕРІ РµСЃР»Рё РїРѕР»СЏ credits РµС‰С‘ РЅРµС‚
         store.ensure_starter_credits(user_info["id"])
         
-        # ✅ ИСПРАВЛЕНО: Полностью очищаем страницу перед показом онбординга
+        # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј СЃС‚СЂР°РЅРёС†Сѓ РїРµСЂРµРґ РїРѕРєР°Р·РѕРј РѕРЅР±РѕСЂРґРёРЅРіР°
         page.clean()
         page.appbar = None
         page.update()
@@ -86,14 +86,14 @@ def main(page: ft.Page):
             page.update()
 
     def on_logout(e):
-        """Обработка выхода из приложения"""
+        """РћР±СЂР°Р±РѕС‚РєР° РІС‹С…РѕРґР° РёР· РїСЂРёР»РѕР¶РµРЅРёСЏ"""
         store.set_user(None)
         page.clean()
         page.appbar = None
         show_login()
 
     def show_login():
-        """Показывает экран входа"""
+        """РџРѕРєР°Р·С‹РІР°РµС‚ СЌРєСЂР°РЅ РІС…РѕРґР°"""
         page.clean()
         page.appbar = None
         login_view = LoginView(on_login=on_login)
@@ -109,29 +109,29 @@ def main(page: ft.Page):
             show_login()
 
     def show_onboarding(user_info):
-        """Показывает экран онбординга (выбор целей)"""
+        """РџРѕРєР°Р·С‹РІР°РµС‚ СЌРєСЂР°РЅ РѕРЅР±РѕСЂРґРёРЅРіР° (РІС‹Р±РѕСЂ С†РµР»РµР№)"""
         page.current_user_info = user_info
         
-        # ✅ ИСПРАВЛЕНО: Полностью очищаем страницу
+        # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј СЃС‚СЂР°РЅРёС†Сѓ
         page.clean()
         page.appbar = None
         page.update()
         
         def on_onboarding_complete(selected_goals):
-            """Обработка завершения выбора целей"""
-            # Сохраняем цели в БД
+            """РћР±СЂР°Р±РѕС‚РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ РІС‹Р±РѕСЂР° С†РµР»РµР№"""
+            # РЎРѕС…СЂР°РЅСЏРµРј С†РµР»Рё РІ Р‘Р”
             store.save_user_goals(user_info["id"], selected_goals)
             
-            # ✅ ИСПРАВЛЕНО: Полностью очищаем перед переходом
+            # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј РїРµСЂРµРґ РїРµСЂРµС…РѕРґРѕРј
             page.clean()
             page.appbar = None
             page.update()
             
-            # Если выбрана диета - показываем тест
+            # Р•СЃР»Рё РІС‹Р±СЂР°РЅР° РґРёРµС‚Р° - РїРѕРєР°Р·С‹РІР°РµРј С‚РµСЃС‚
             if "diet" in selected_goals:
                 show_diet_quiz(user_info)
             else:
-                # Сразу показываем приложение
+                # РЎСЂР°Р·Сѓ РїРѕРєР°Р·С‹РІР°РµРј РїСЂРёР»РѕР¶РµРЅРёРµ
                 show_app(user_info)
         
         onboarding_view = OnboardingView(page, user_info, on_onboarding_complete)
@@ -139,20 +139,20 @@ def main(page: ft.Page):
         page.update()
 
     def show_diet_quiz(user_info):
-        """Показывает тест на предпочтения диеты"""
-        # ✅ ИСПРАВЛЕНО: Полностью очищаем страницу
+        """РџРѕРєР°Р·С‹РІР°РµС‚ С‚РµСЃС‚ РЅР° РїСЂРµРґРїРѕС‡С‚РµРЅРёСЏ РґРёРµС‚С‹"""
+        # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј СЃС‚СЂР°РЅРёС†Сѓ
         page.clean()
         page.appbar = None
         page.update()
         
         def on_quiz_complete():
-            """Обработка завершения теста"""
-            # ✅ ИСПРАВЛЕНО: Полностью очищаем перед показом приложения
+            """РћР±СЂР°Р±РѕС‚РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµСЃС‚Р°"""
+            # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј РїРµСЂРµРґ РїРѕРєР°Р·РѕРј РїСЂРёР»РѕР¶РµРЅРёСЏ
             page.clean()
             page.appbar = None
             page.update()
             
-            # Показываем приложение после теста
+            # РџРѕРєР°Р·С‹РІР°РµРј РїСЂРёР»РѕР¶РµРЅРёРµ РїРѕСЃР»Рµ С‚РµСЃС‚Р°
             show_app(user_info)
         
         quiz_view = DietQuizView(page, user_info, on_quiz_complete)
@@ -160,8 +160,8 @@ def main(page: ft.Page):
         page.update()
 
     def show_app(user_info):
-        """Показывает основное приложение"""
-        # ✅ ИСПРАВЛЕНО: Полностью очищаем страницу перед показом приложения
+        """РџРѕРєР°Р·С‹РІР°РµС‚ РѕСЃРЅРѕРІРЅРѕРµ РїСЂРёР»РѕР¶РµРЅРёРµ"""
+        # вњ… РРЎРџР РђР’Р›Р•РќРћ: РџРѕР»РЅРѕСЃС‚СЊСЋ РѕС‡РёС‰Р°РµРј СЃС‚СЂР°РЅРёС†Сѓ РїРµСЂРµРґ РїРѕРєР°Р·РѕРј РїСЂРёР»РѕР¶РµРЅРёСЏ
         page.clean()
         page.appbar = None
         page.update()
@@ -190,11 +190,11 @@ def main(page: ft.Page):
             on_language_change=on_language_change,
             on_menu_click=on_menu_click,
             on_theme_change=on_language_change,
-            user_info=user_info,        # ✅ FIX: передаём имя для аватара
+            user_info=user_info,        # вњ… FIX: РїРµСЂРµРґР°С‘Рј РёРјСЏ РґР»СЏ Р°РІР°С‚Р°СЂР°
         )
         
         # Use Stack to overlay ChatWidget
-        # chat_fab_container хранится как ref чтобы GroceryStore мог менять bottom
+        # chat_fab_container С…СЂР°РЅРёС‚СЃСЏ РєР°Рє ref С‡С‚РѕР±С‹ GroceryStore РјРѕРі РјРµРЅСЏС‚СЊ bottom
         chat_fab_container = ft.Container(
             content=ChatWidget(page, on_refresh=app_layout.refresh_active_view),
             right=20,
@@ -202,7 +202,7 @@ def main(page: ft.Page):
         )
 
         def on_grocery_panel_show():
-            """Поднять chat FAB выше нижней панели магазина (80px + отступ)"""
+            """РџРѕРґРЅСЏС‚СЊ chat FAB РІС‹С€Рµ РЅРёР¶РЅРµР№ РїР°РЅРµР»Рё РјР°РіР°Р·РёРЅР° (80px + РѕС‚СЃС‚СѓРї)"""
             chat_fab_container.bottom = 110
             try:
                 page.update()
@@ -210,14 +210,14 @@ def main(page: ft.Page):
                 pass
 
         def on_grocery_panel_hide():
-            """Вернуть chat FAB на обычную позицию"""
+            """Р’РµСЂРЅСѓС‚СЊ chat FAB РЅР° РѕР±С‹С‡РЅСѓСЋ РїРѕР·РёС†РёСЋ"""
             chat_fab_container.bottom = 20
             try:
                 page.update()
             except Exception:
                 pass
 
-        # Передаём callbacks в GroceryStore
+        # РџРµСЂРµРґР°С‘Рј callbacks РІ GroceryStore
         app_layout.grocery_view.on_panel_show = on_grocery_panel_show
         app_layout.grocery_view.on_panel_hide = on_grocery_panel_hide
 
@@ -242,3 +242,5 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main)
+
+
