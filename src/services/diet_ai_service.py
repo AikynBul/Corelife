@@ -27,15 +27,34 @@ class DietAIService:
         
         # Ð¦ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»ÑÐ¼ Ð´Ð¸ÐµÑ‚Ñ‹
         self.CALORIE_TARGETS = {
-            "weight_loss": {"min": 1500, "max": 1700, "daily": 1600},
-            "muscle_gain": {"min": 2500, "max": 2800, "daily": 2650},
-            "healthy_lifestyle": {"min": 2000, "max": 2200, "daily": 2100},
-            "meal_planning": {"min": 2000, "max": 2200, "daily": 2100}
+            "weight_loss": {"daily": 1800},
+            "muscle_gain": {"daily": 3000},
+            "healthy_lifestyle": {"daily": 2200},
+            "meal_planning": {"daily": 2000},
+        }
+        self.MACRO_TARGETS = {
+            "weight_loss": {"protein": 35, "carbs": 40, "fat": 25},
+            "muscle_gain": {"protein": 30, "carbs": 45, "fat": 25},
+            "healthy_lifestyle": {"protein": 25, "carbs": 50, "fat": 25},
+            "meal_planning": {"protein": 25, "carbs": 50, "fat": 25},
         }
     
     def get_target_calories(self, goal):
         """Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ñ†ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð´Ð»Ñ Ñ†ÐµÐ»Ð¸"""
         return self.CALORIE_TARGETS.get(goal, {"daily": 2000})["daily"]
+
+    def get_macro_targets(self, goal):
+        return self.MACRO_TARGETS.get(goal, {"protein": 25, "carbs": 50, "fat": 25})
+
+    def calculate_macro_grams(self, target_calories, macro_targets):
+        protein_pct = macro_targets["protein"] / 100
+        carbs_pct = macro_targets["carbs"] / 100
+        fat_pct = macro_targets["fat"] / 100
+        return {
+            "protein_g": round((target_calories * protein_pct) / 4),
+            "carbs_g": round((target_calories * carbs_pct) / 4),
+            "fat_g": round((target_calories * fat_pct) / 9),
+        }
     
     def build_diet_prompt(self, preferences, target_calories, restrictions_text):
         """Ð¡Ñ‚Ñ€Ð¾Ð¸Ñ‚ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚ Ð´Ð»Ñ Groq API"""
@@ -67,6 +86,13 @@ class DietAIService:
             meal_names = ["breakfast", "lunch", "dinner"]
         elif meals_per_day >= 4:
             meal_names = ["breakfast", "lunch", "snack", "dinner"]
+
+        macro_targets = self.get_macro_targets(goal)
+        macro_grams = self.calculate_macro_grams(target_calories, macro_targets)
+        weekly_calories = target_calories * 7
+        weekly_protein = macro_grams["protein_g"] * 7
+        weekly_carbs = macro_grams["carbs_g"] * 7
+        weekly_fat = macro_grams["fat_g"] * 7
         
         # Ð¡Ð¿ÐµÑ†Ð¸Ñ„Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»Ð¸
         goal_instructions = {
@@ -82,6 +108,7 @@ class DietAIService:
 
 GOAL: {goal.replace('_', ' ').title()}
 TARGET: {target_calories} kcal/day (approximately {target_calories // meals_per_day} kcal per meal)
+WEEKLY TARGET: {weekly_calories} kcal/week
 
 DIETARY PREFERENCES:
 - Diet Type: {meal_type_text}
@@ -95,6 +122,17 @@ MEDICAL RESTRICTIONS:
 GOAL-SPECIFIC INSTRUCTIONS:
 {goal_instruction}
 
+IMPORTANT: Calculate calories and macros correctly.
+Daily macro targets for {goal.replace('_', ' ').title()}:
+- Protein: {macro_grams["protein_g"]}g ({macro_targets["protein"]}%)
+- Carbs: {macro_grams["carbs_g"]}g ({macro_targets["carbs"]}%)
+- Fat: {macro_grams["fat_g"]}g ({macro_targets["fat"]}%)
+
+Weekly macro targets:
+- Protein: {weekly_protein}g/week
+- Carbs: {weekly_carbs}g/week
+- Fat: {weekly_fat}g/week
+
 CRITICAL RULES:
 1. ALL meals MUST be {meal_type_text} (strictly follow this!)
 2. NEVER include these foods: {avoid_text}
@@ -102,6 +140,7 @@ CRITICAL RULES:
 4. Each meal should be realistic and easy to prepare for students
 5. Include variety across the week (don't repeat meals)
 6. Provide accurate calorie and macro estimates
+7. Keep each day close to {target_calories} kcal (±10%)
 
 Return ONLY valid JSON (no markdown, no backticks, no explanations):
 {{
@@ -215,19 +254,15 @@ Each meal must have:
 
                 prompt += f"""
 
-===GROCERY LINK CONSTRAINT — MANDATORY===
-The user enabled grocery-diet link. Build ALL meals using ONLY these purchased ingredients:
-{ingredient_list}
+GROCERY LINK IS ACTIVE. The user has purchased these ingredients: {ingredient_list}
 {usda_context}
 
-STRICT RULES:
-- Every single meal MUST use only ingredients from this list. No exceptions, no additions.
-- Use the real USDA nutrition values above to calculate accurate meal calories and macros.
-- If these ingredients are CLEARLY insufficient for goal="{goal}" or incompatible with dietary restrictions,
-  respond with ONLY this JSON (nothing else at all):
-  {{"error": true, "reason": "One sentence why these groceries cannot support goal={goal}"}}
-- Otherwise build the full 7-day meal plan JSON using ONLY the listed ingredients.
-=========================================
+Your task:
+1. Analyze if these ingredients are sufficient to build a meal plan that matches the user's goal ({goal}) and dietary restrictions.
+2. If ingredients are clearly insufficient or incompatible with the goal (e.g., only pastries for a muscle gain goal, or allergen-only products for someone with that allergy), respond with a JSON error object:
+   {{"error": true, "reason": "Brief explanation why the groceries are insufficient for this goal"}}
+3. If ingredients are sufficient or can be reasonably combined, build the meal plan using ONLY these ingredients. Be creative.
+4. Do NOT suggest ingredients outside the provided list.
 """
             
             print("Sending request to Groq API for meal plan generation...")

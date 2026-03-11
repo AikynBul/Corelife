@@ -130,8 +130,8 @@ class MonthView(ft.Column):
                     row_controls.append(
                         ft.Container(
                             expand=True,
-                            bgcolor=ft.Colors.SURFACE if (self.page and self.page.theme_mode == ft.ThemeMode.DARK) else ft.Colors.GREY_50,
-                            border=ft.border.all(0.5, ft.Colors.GREY_300),
+                            bgcolor=ft.Colors.with_opacity(0.3, ft.Colors.GREY_400),
+                            border=ft.border.all(0.5, ft.Colors.GREY_400),
                         )
                     )
                 else:
@@ -159,16 +159,25 @@ class MonthView(ft.Column):
                     
                     # Добавляем видимые события
                     for ev in visible_events:
+                        base_color = get_event_color(ev)
+                        is_completed = ev.get("completed", False)
+                        event_bgcolor = ft.Colors.with_opacity(0.4, base_color) if is_completed else base_color
+                        text_decoration = (
+                            ft.TextDecoration.LINE_THROUGH
+                            if is_completed
+                            else ft.TextDecoration.NONE
+                        )
                         event_controls.append(
                             ft.Container(
                                 content=ft.Text(
                                     f"{EventStore.CATEGORIES.get(ev.get('category', 'Personal'), '📌')} {ev['title']}",
                                     size=10,
                                     color=ft.Colors.WHITE,
+                                    style=ft.TextStyle(decoration=text_decoration),
                                     no_wrap=True,
                                     overflow=ft.TextOverflow.ELLIPSIS,
                                 ),
-                                bgcolor=get_event_color(ev),  # ✅ ИЗМЕНЕНО: используем цвет по категории
+                                bgcolor=event_bgcolor,
                                 border_radius=4,
                                 padding=ft.padding.symmetric(horizontal=4, vertical=2),
                                 width=100,
@@ -187,7 +196,7 @@ class MonthView(ft.Column):
                                     color=ft.Colors.PRIMARY,
                                     weight=ft.FontWeight.BOLD,
                                 ),
-                                bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                                bgcolor=ft.Colors.BLUE_100,
                                 border_radius=4,
                                 padding=ft.padding.symmetric(horizontal=6, vertical=2),
                                 width=100,
@@ -205,7 +214,7 @@ class MonthView(ft.Column):
                                     str(day),
                                     size=12,
                                     weight=ft.FontWeight.BOLD,
-                                    color=ft.Colors.ON_SURFACE if not is_today else ft.Colors.WHITE,
+                                    color=ft.Colors.WHITE if is_today else None,
                                 ),
                                 bgcolor=ft.Colors.BLUE if is_today else None,
                                 border_radius=15,
@@ -230,7 +239,7 @@ class MonthView(ft.Column):
                         spacing=2,
                     )
                     
-                    cell_bgcolor = ft.Colors.SURFACE if (self.page and self.page.theme_mode == ft.ThemeMode.DARK) else ft.Colors.WHITE
+                    cell_bgcolor = ft.Colors.SURFACE
                     
                     row_controls.append(
                         ft.Container(

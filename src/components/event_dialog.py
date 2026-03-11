@@ -10,6 +10,10 @@ class EventDialog(ft.AlertDialog):
         self.on_dismiss_callback = on_dismiss
         self.event = event
         self.is_editing = event is not None
+
+        is_light_theme = self.page_ref.theme_mode == ft.ThemeMode.LIGHT
+        label_color = ft.Colors.BLACK if is_light_theme else ft.Colors.GREY_300
+        cancel_color = ft.Colors.BLACK if is_light_theme else ft.Colors.GREY_400
         
         # Парсим данные события
         if event:
@@ -194,10 +198,10 @@ class EventDialog(ft.AlertDialog):
                         # ✅ When - отдельный блок
                         ft.Container(
                             content=ft.Column([
-                                ft.Row([
-                                    ft.Icon(ft.Icons.CALENDAR_TODAY, size=18, color=ft.Colors.BLUE_700),
-                                    ft.Text("When", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
-                                ], spacing=8),
+                                    ft.Row([
+                                        ft.Icon(ft.Icons.CALENDAR_TODAY, size=18, color=ft.Colors.BLUE_700),
+                                        ft.Text("When", size=14, weight=ft.FontWeight.BOLD, color=label_color),
+                                    ], spacing=8),
                                 ft.Container(height=8),
                                 self.date_field,
                                 ft.Container(height=8),
@@ -205,7 +209,7 @@ class EventDialog(ft.AlertDialog):
                             ]),
                             padding=15,
                             border_radius=10,
-                            bgcolor=ft.Colors.BLUE_50,
+                            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400),
                             border=ft.border.all(1, ft.Colors.BLUE_200),
                         ),
                         
@@ -218,14 +222,14 @@ class EventDialog(ft.AlertDialog):
                                 content=ft.Column([
                                     ft.Row([
                                         ft.Icon(ft.Icons.LABEL, size=18, color=ft.Colors.PURPLE_700),
-                                        ft.Text("Category", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                                        ft.Text("Category", size=14, weight=ft.FontWeight.BOLD, color=label_color),
                                     ], spacing=8),
                                     ft.Container(height=8),
                                     self.category_dropdown,
                                 ]),
                                 padding=15,
                                 border_radius=10,
-                                bgcolor=ft.Colors.PURPLE_50,
+                                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.PURPLE_400),
                                 border=ft.border.all(1, ft.Colors.PURPLE_200),
                                 expand=True,
                             ),
@@ -237,14 +241,14 @@ class EventDialog(ft.AlertDialog):
                                 content=ft.Column([
                                     ft.Row([
                                         ft.Icon(ft.Icons.FLAG, size=18, color=ft.Colors.ORANGE_700),
-                                        ft.Text("Priority", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                                        ft.Text("Priority", size=14, weight=ft.FontWeight.BOLD, color=label_color),
                                     ], spacing=8),
                                     ft.Container(height=8),
                                     self.priority_dropdown,
                                 ]),
                                 padding=15,
                                 border_radius=10,
-                                bgcolor=ft.Colors.ORANGE_50,
+                                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.ORANGE_400),
                                 border=ft.border.all(1, ft.Colors.ORANGE_200),
                                 expand=True,
                             ),
@@ -265,7 +269,7 @@ class EventDialog(ft.AlertDialog):
                             content=self.is_task_checkbox,
                             padding=10,
                             border_radius=8,
-                            bgcolor=ft.Colors.GREY_50,
+                            bgcolor=ft.Colors.with_opacity(0.06, ft.Colors.GREY_400),
                         ),
                     ],
                     spacing=0,
@@ -280,7 +284,7 @@ class EventDialog(ft.AlertDialog):
                     "Cancel",
                     on_click=self.close_dialog,
                     style=ft.ButtonStyle(
-                        color=ft.Colors.GREY_600,
+                        color=cancel_color,
                     )
                 ),
                 ft.ElevatedButton(

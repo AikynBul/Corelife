@@ -81,7 +81,7 @@ class AddMealToCalendarDialog(ft.AlertDialog):
                             ),
                         ], spacing=10),
                         padding=10,
-                        bgcolor=ft.Colors.GREEN_50,
+                        bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.GREEN_400),
                         border_radius=8,
                     ),
                     ft.Container(height=15),

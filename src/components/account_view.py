@@ -1,4 +1,5 @@
 import flet as ft
+import base64
 from utils.translations import translations
 from data.store import store
 
@@ -15,16 +16,53 @@ class AccountView(ft.Container):
         # self.bgcolor = ft.Colors.WHITE # Removed hardcoded color
         
         # Profile Section
-        self.avatar = ft.CircleAvatar(
-            content=ft.Text(
-                self.user_info.get("name", "U")[0].upper(), 
-                size=30, 
-                weight=ft.FontWeight.BOLD,
-                # color=ft.Colors.BLACK
+        # Load saved avatar
+        saved_avatar = store.get_avatar_url(self.user_info.get("id"))
+        
+        # Avatar circle — shows image if available, else initials
+        if saved_avatar:
+            avatar_content = ft.Image(
+                src_base64=saved_avatar,
+                width=70, height=70,
+                fit=ft.ImageFit.COVER,
+                border_radius=ft.border_radius.all(35),
+            )
+        else:
+            avatar_content = ft.Text(
+                self.user_info.get("name", "U")[0].upper(),
+                size=30, weight=ft.FontWeight.BOLD,
+            )
+        
+        self.avatar_content_ref = ft.Ref[ft.Container]()
+        self.avatar = ft.Stack([
+            ft.Container(
+                ref=self.avatar_content_ref,
+                content=avatar_content,
+                width=70, height=70,
+                border_radius=ft.border_radius.all(35),
+                bgcolor=ft.Colors.BLUE_200,
+                alignment=ft.alignment.center,
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             ),
-            radius=35,
-            bgcolor=ft.Colors.BLUE_200,
-        )
+            # Camera overlay button
+            ft.Container(
+                content=ft.Icon(ft.Icons.CAMERA_ALT, size=18, color=ft.Colors.WHITE),
+                width=24, height=24,
+                bgcolor=ft.Colors.BLUE_600,
+                border_radius=ft.border_radius.all(12),
+                alignment=ft.alignment.center,
+                bottom=0, right=0,
+                on_click=self._pick_avatar,
+                ink=True,
+                tooltip="Change avatar",
+            ),
+        ], width=70, height=70)
+        
+        # FilePicker for avatar upload
+        self._file_picker = ft.FilePicker(on_result=self._on_avatar_picked)
+        if self.page_ref:
+            self.page_ref.overlay.append(self._file_picker)
+            self.page_ref.update()
         
         self.name_text = ft.Text(
             self.user_info.get("name", "User"), 
@@ -254,6 +292,58 @@ class AccountView(ft.Container):
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
         )
 
+    def _pick_avatar(self, e):
+        """Открыть диалог выбора файла аватарки."""
+        self._file_picker.pick_files(
+            allowed_extensions=["png", "jpg", "jpeg", "webp"],
+            allow_multiple=False,
+        )
+
+    def _on_avatar_picked(self, e: ft.FilePickerResultEvent):
+        """Обработка выбранного файла аватарки."""
+        if not e.files or len(e.files) == 0:
+            return
+        
+        file = e.files[0]
+        try:
+            with open(file.path, "rb") as f:
+                img_bytes = f.read()
+            
+            # Convert to base64
+            b64 = base64.b64encode(img_bytes).decode("utf-8")
+            
+            # Limit size: max ~500KB base64
+            if len(b64) > 700000:
+                self._show_snack("Image too large. Please use a smaller image (< 500KB).", ft.Colors.ORANGE_400)
+                return
+            
+            user_id = self.user_info.get("id")
+            store.save_avatar_url(user_id, b64)
+            
+            # Update avatar display
+            new_img = ft.Image(
+                src_base64=b64,
+                width=70, height=70,
+                fit=ft.ImageFit.COVER,
+                border_radius=ft.border_radius.all(35),
+            )
+            if self.avatar_content_ref.current:
+                self.avatar_content_ref.current.content = new_img
+                self.avatar_content_ref.current.update()
+            
+            # Update header avatar too
+            page = self.page_ref or (self.page if hasattr(self, "page") else None)
+            if page and hasattr(page, "appbar") and page.appbar:
+                try:
+                    page.appbar.update_avatar(b64)
+                except Exception:
+                    pass
+            
+            self._show_snack("✅ Avatar updated!")
+        except Exception as ex:
+            print(f"Avatar upload error: {ex}")
+            self._show_snack(f"❌ Failed to load image: {ex}", ft.Colors.RED_400)
+
     def _show_snack(self, message, color=ft.Colors.GREEN_600):
         """Показать уведомление."""
         page = self.page_ref or (self.page if hasattr(self, "page") else None)
@@ -326,13 +416,14 @@ class AccountView(ft.Container):
         def do_delete(e):
             page.close(confirm_dialog)
             user_id = self.user_info.get("id")
-            success, msg = store.delete_account(user_id)
+            # ✅ ИСПРАВЛЕНО: Используем delete_user_completely вместо delete_account
+            success = store.delete_user_completely(user_id)
             if success:
-                self._show_snack("✅ Account deleted.")
+                self._show_snack("✅ Account deleted. Username is now available.")
                 import time; time.sleep(0.5)
                 self.on_logout(None)
             else:
-                self._show_snack(f"❌ {msg}", ft.Colors.RED_400)
+                self._show_snack("❌ Failed to delete account", ft.Colors.RED_400)
 
         confirm_dialog = ft.AlertDialog(
             modal=True,

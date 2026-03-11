@@ -40,9 +40,9 @@ class ChatWidget(ft.Column):
             on_submit=self.send_message,
             border_radius=20,
             content_padding=10,
-            text_style=ft.TextStyle(color=ft.Colors.BLACK),
-            cursor_color=ft.Colors.BLACK,
-            hint_style=ft.TextStyle(color=ft.Colors.GREY_600)
+            text_style=ft.TextStyle(color=ft.Colors.WHITE),
+            cursor_color=ft.Colors.WHITE,
+            hint_style=ft.TextStyle(color=ft.Colors.GREY_400)
         )
         
         self.chat_window = ft.Container(
@@ -50,7 +50,7 @@ class ChatWidget(ft.Column):
                 [
                     ft.Container(
                         content=ft.Text("AI Assistant", weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                        bgcolor=ft.Colors.BLUE,
+                        bgcolor=ft.Colors.BLUE_700,
                         padding=10,
                         border_radius=ft.border_radius.only(top_left=10, top_right=10)
                     ),
@@ -63,20 +63,21 @@ class ChatWidget(ft.Column):
                         content=ft.Row(
                             [
                                 self.input_field,
-                                ft.IconButton(ft.Icons.SEND, on_click=self.send_message, icon_color=ft.Colors.BLUE)
+                                ft.IconButton(ft.Icons.SEND, on_click=self.send_message, icon_color=ft.Colors.BLUE_300)
                             ]
                         ),
                         padding=10,
-                        border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_300))
+                        border=ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_700))
                     )
                 ],
                 spacing=0
             ),
             width=350,
             height=500,
-            bgcolor=ft.Colors.WHITE,
+            bgcolor=ft.Colors.GREY_900,
             border_radius=10,
-            shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.BLACK12),
+            border=ft.border.all(1, ft.Colors.GREY_700),
+            shadow=ft.BoxShadow(blur_radius=16, color=ft.Colors.with_opacity(0.4, ft.Colors.BLACK), offset=ft.Offset(0, 4)),
             visible=False,
             animate_opacity=300,
         )
@@ -91,6 +92,8 @@ class ChatWidget(ft.Column):
             self.chat_window,
             self.fab
         ]
+
+        self._apply_theme()
         
         # ✅ НОВОЕ ПРИВЕТСТВИЕ С ПЛАНИРОВЩИКОМ
         self.add_message(
@@ -293,15 +296,41 @@ class ChatWidget(ft.Column):
 
     def toggle_chat(self, e):
         self.chat_window.visible = not self.chat_window.visible
+        self._apply_theme()
         self.update()
 
+    def _apply_theme(self):
+        is_dark = self.page_ref and self.page_ref.theme_mode == ft.ThemeMode.DARK
+        self.chat_window.bgcolor = ft.Colors.GREY_900 if is_dark else ft.Colors.WHITE
+        self.chat_window.border = ft.border.all(1, ft.Colors.GREY_700 if is_dark else ft.Colors.GREY_300)
+
+        # Header text and input styles
+        header_container = self.chat_window.content.controls[0]
+        header_text = header_container.content
+        header_text.color = ft.Colors.WHITE if is_dark else ft.Colors.GREY_900
+
+        self.input_field.text_style = ft.TextStyle(color=ft.Colors.WHITE if is_dark else ft.Colors.BLACK)
+        self.input_field.cursor_color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
+        self.input_field.hint_style = ft.TextStyle(color=ft.Colors.GREY_400 if is_dark else ft.Colors.GREY_600)
+
+        input_container = self.chat_window.content.controls[2]
+        input_container.border = ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_700 if is_dark else ft.Colors.GREY_300))
+
     def add_message(self, text, is_user=True, update=True):
+        is_dark = self.page_ref and self.page_ref.theme_mode == ft.ThemeMode.DARK
+        if is_user:
+            text_color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
+            bubble_color = ft.Colors.BLUE_700 if is_dark else ft.Colors.BLUE_100
+        else:
+            text_color = ft.Colors.WHITE if is_dark else ft.Colors.GREY_900
+            bubble_color = ft.Colors.GREY_800 if is_dark else ft.Colors.GREY_200
+
         self.chat_history.controls.append(
             ft.Row(
                 [
                     ft.Container(
-                        content=ft.Text(text, color=ft.Colors.WHITE if is_user else ft.Colors.BLACK),
-                        bgcolor=ft.Colors.BLUE if is_user else ft.Colors.GREY_200,
+                        content=ft.Text(text, color=text_color),
+                        bgcolor=bubble_color,
                         padding=10,
                         border_radius=10,
                         width=250 if len(text) > 30 else None
@@ -335,34 +364,34 @@ class ChatWidget(ft.Column):
                 [
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.EVENT, color=ft.Colors.BLUE_600, size=20),
+                            ft.Icon(ft.Icons.EVENT, color=ft.Colors.BLUE_300, size=20),
                             ft.Text(
                                 "Event Created!",
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.BLUE_600,
+                                color=ft.Colors.BLUE_300,
                                 size=14,
                             ),
                         ],
                         spacing=8,
                     ),
-                    ft.Divider(height=1, color=ft.Colors.BLUE_100),
+                    ft.Divider(height=1, color=ft.Colors.BLUE_800),
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.TITLE, size=14, color=ft.Colors.GREY_600),
+                            ft.Icon(ft.Icons.TITLE, size=14, color=ft.Colors.GREY_400),
                             ft.Text(title, size=13),
                         ],
                         spacing=6,
                     ),
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.CALENDAR_TODAY, size=14, color=ft.Colors.GREY_600),
+                            ft.Icon(ft.Icons.CALENDAR_TODAY, size=14, color=ft.Colors.GREY_400),
                             ft.Text(date_str, size=13),
                         ],
                         spacing=6,
                     ),
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.ACCESS_TIME, size=14, color=ft.Colors.GREY_600),
+                            ft.Icon(ft.Icons.ACCESS_TIME, size=14, color=ft.Colors.GREY_400),
                             ft.Text(time_str, size=13),
                         ],
                         spacing=6,
@@ -372,8 +401,8 @@ class ChatWidget(ft.Column):
                     [
                         ft.Row(
                             [
-                                ft.Icon(ft.Icons.NOTES, size=14, color=ft.Colors.GREY_600),
-                                ft.Text(description, size=12, color=ft.Colors.GREY_600),
+                                ft.Icon(ft.Icons.NOTES, size=14, color=ft.Colors.GREY_400),
+                                ft.Text(description, size=12, color=ft.Colors.GREY_400),
                             ],
                             spacing=6,
                         )
@@ -383,7 +412,7 @@ class ChatWidget(ft.Column):
                 ),
                 spacing=6,
             ),
-            bgcolor=ft.Colors.BLUE_50,
+            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400),
             border=ft.border.all(1, ft.Colors.BLUE_200),
             border_radius=10,
             padding=12,
@@ -400,26 +429,26 @@ class ChatWidget(ft.Column):
                 [
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.HELP_CENTER, color=ft.Colors.INDIGO_600, size=20),
+                            ft.Icon(ft.Icons.HELP_CENTER, color=ft.Colors.INDIGO_300, size=20),
                             ft.Text(
                                 "FAQ",
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.INDIGO_600,
+                                color=ft.Colors.INDIGO_300,
                                 size=14,
                             ),
                         ],
                         spacing=8,
                     ),
-                    ft.Divider(height=1, color=ft.Colors.INDIGO_100),
+                    ft.Divider(height=1, color=ft.Colors.INDIGO_800),
                     ft.Text(
                         f"❓ {question}",
                         size=13,
                         weight=ft.FontWeight.W_500,
-                        color=ft.Colors.INDIGO_900,
+                        color=ft.Colors.INDIGO_200,
                     ),
                     ft.Container(
-                        content=ft.Text(answer, size=13, color=ft.Colors.GREY_800),
-                        bgcolor=ft.Colors.INDIGO_50,
+                        content=ft.Text(answer, size=13, color=ft.Colors.GREY_200),
+                        bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.INDIGO_400),
                         border_radius=8,
                         padding=10,
                     ),

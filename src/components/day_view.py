@@ -171,7 +171,7 @@ class DayView(ft.Column):
             timeline_stack.controls.append(
                 ft.Container(
                     height=1,
-                    bgcolor=ft.Colors.GREY_200,
+                    bgcolor=ft.Colors.GREY_300,
                     top=top_pos,
                     left=60,
                     right=0,
@@ -236,17 +236,38 @@ class DayView(ft.Column):
                 column_width = AVAILABLE_WIDTH / total_columns
                 left = 60 + (column * column_width)
                 width = column_width - 5  # 5px отступ между колонками
-                
+                base_color = get_event_color(e)
+                is_completed = e.get("completed", False)
+                event_bgcolor = ft.Colors.with_opacity(0.4, base_color) if is_completed else base_color
+                text_decoration = (
+                    ft.TextDecoration.LINE_THROUGH
+                    if is_completed
+                    else ft.TextDecoration.NONE
+                )
+
                 # Event Card
                 event_card = ft.Container(
                     content=ft.Column(
                         [
-                            ft.Text(e["title"], weight=ft.FontWeight.BOLD, size=12, color=ft.Colors.WHITE, no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS),
-                            ft.Text(f"{start_str} - {end_str if 'end' in e else ''}", size=10, color=ft.Colors.WHITE70),
+                            ft.Text(
+                                e["title"],
+                                weight=ft.FontWeight.BOLD,
+                                size=12,
+                                color=ft.Colors.WHITE,
+                                style=ft.TextStyle(decoration=text_decoration),
+                                no_wrap=True,
+                                overflow=ft.TextOverflow.ELLIPSIS,
+                            ),
+                            ft.Text(
+                                f"{start_str} - {end_str if 'end' in e else ''}",
+                                size=10,
+                                color=ft.Colors.WHITE70,
+                                style=ft.TextStyle(decoration=text_decoration),
+                            ),
                         ],
                         spacing=2
                     ),
-                    bgcolor=get_event_color(e),  # ✅ ИЗМЕНЕНО: используем цвет по категории
+                    bgcolor=event_bgcolor,
                     border_radius=6,
                     padding=5,
                     top=top,

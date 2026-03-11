@@ -1,3 +1,4 @@
+import os
 import flet as ft
 from components.layout import AppLayout
 from components.header import Header
@@ -10,6 +11,31 @@ from data.store import store
 
 def main(page: ft.Page):
     page.title = "Corelife"
+    
+    # ✅ ИСПРАВЛЕНО: Правильная установка иконки для Flet приложения
+    # Flet требует путь к .ico или .png файлу
+    icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "photos", "Logo_Corelife.png"))
+    
+    # Проверяем разные варианты имени файла
+    if not os.path.exists(icon_path):
+        icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "photos", "Logo Corelife.png"))
+    
+    if not os.path.exists(icon_path):
+        # Пробуем в корне проекта
+        icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "photos", "Logo_Corelife.png"))
+    
+    # ✅ ПРАВИЛЬНЫЙ СПОСОБ установки иконки в Flet
+    if os.path.exists(icon_path):
+        try:
+            # Для desktop приложений
+            page.window_icon = icon_path
+            print(f"✅ Logo loaded: {icon_path}")
+        except Exception as e:
+            print(f"⚠️ Could not set icon: {e}")
+    else:
+        print(f"❌ Logo file not found. Tried: {icon_path}")
+        print("📁 Please ensure Logo_Corelife.png is in the photos/ folder")
+    
     page.theme_mode = ft.ThemeMode.LIGHT
     
     # Load saved language preference
@@ -26,6 +52,12 @@ def main(page: ft.Page):
     def on_login(user_info):
         """Обработка входа пользователя"""
         store.set_user(user_info["id"])
+        
+        # ✅ НОВОЕ: Проверка на gamemode аккаунт (модератор)
+        if user_info.get("username") == "gamemode":
+            print("🔑 Gamemode account detected - granting unlimited privileges")
+            store.grant_gamemode_privileges(user_info["id"])
+        
         # Выдаём 500 стартовых кредитов если поля credits ещё нет
         store.ensure_starter_credits(user_info["id"])
         

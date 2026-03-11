@@ -106,7 +106,8 @@ class LoginView(ft.Container):
         self.update()
         
         if self.is_registering:
-            if "@" not in email:
+            # ✅ ИСПРАВЛЕНО: Email опционален - проверяем только если указан
+            if email and "@" not in email:
                 self.error_text.value = "Invalid email address"
                 self.error_text.visible = True
                 self.update()

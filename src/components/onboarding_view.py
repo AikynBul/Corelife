@@ -130,11 +130,11 @@ class OnboardingView(ft.Column):
         """Обновляет стиль карточки в зависимости от выбора"""
         if is_selected:
             card.border = ft.border.all(3, color)
-            card.bgcolor = color.replace("400", "50")  # Светлый оттенок
+            card.bgcolor = ft.Colors.with_opacity(0.1, color)
             card.shadow = ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=10,
-                color=color.replace("400", "200"),
+                color=ft.Colors.with_opacity(0.3, color),
                 offset=ft.Offset(0, 4)
             )
         else:

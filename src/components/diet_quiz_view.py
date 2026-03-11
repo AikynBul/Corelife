@@ -277,7 +277,7 @@ class DietQuizView(ft.Column):
                 ),
                 border_radius=10,
                 padding=15,
-                bgcolor=ft.Colors.BLUE_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE_400) if is_selected else None,
                 ink=True,
                 on_click=lambda e, val=option["value"]: self.select_option(question["id"], val),
                 animate=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT)
@@ -329,7 +329,7 @@ class DietQuizView(ft.Column):
                 ),
                 border_radius=10,
                 padding=15,
-                bgcolor=ft.Colors.GREEN_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.GREEN_400) if is_selected else None,
                 ink=True,
                 on_click=lambda e, val=option["value"]: self.toggle_limited_selection(question["id"], val, max_selections),
                 animate=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT)

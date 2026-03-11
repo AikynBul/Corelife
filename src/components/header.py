@@ -1,5 +1,6 @@
 import flet as ft
 from data.store import store
+from utils.translations import translations
 
 
 class Header(ft.AppBar):
@@ -36,8 +37,8 @@ class Header(ft.AppBar):
             ], spacing=3, tight=True),
             padding=ft.padding.symmetric(horizontal=10, vertical=5),
             border_radius=20,
-            bgcolor=ft.Colors.AMBER_50,
-            border=ft.border.all(1, ft.Colors.AMBER_300),
+            bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.AMBER_400),
+            border=ft.border.all(1, ft.Colors.AMBER_400),
             tooltip="Your credits. Click for details.",
             on_click=self._show_credits_dialog,
             ink=True,
@@ -53,18 +54,61 @@ class Header(ft.AppBar):
             ft.Container(width=10),
             ft.GestureDetector(
                 on_tap=self.on_account_tap,
-                content=ft.CircleAvatar(
-                    content=ft.Text(
-                        (self.user_info.get("name") or "?")[0].upper(),
-                        size=14,
-                        weight=ft.FontWeight.BOLD,
-                    ),
-                    bgcolor=ft.Colors.BLUE_200,
-                    radius=16,
-                )
+                content=self._build_avatar_widget()
             ),
             ft.Container(width=10),
         ]
+
+    def _build_avatar_widget(self):
+        """Строит виджет аватарки — фото или первая буква."""
+        try:
+            avatar_url = store.get_avatar_url(store.user_id) if store.user_id else ""
+        except Exception:
+            avatar_url = ""
+        
+        if avatar_url:
+            return ft.Container(
+                content=ft.Image(
+                    src_base64=avatar_url,
+                    width=32, height=32,
+                    fit=ft.ImageFit.COVER,
+                    border_radius=ft.border_radius.all(16),
+                ),
+                width=32, height=32,
+                border_radius=ft.border_radius.all(16),
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            )
+        else:
+            return ft.CircleAvatar(
+                content=ft.Text(
+                    (self.user_info.get("name") or "?")[0].upper(),
+                    size=14,
+                    weight=ft.FontWeight.BOLD,
+                ),
+                bgcolor=ft.Colors.BLUE_200,
+                radius=16,
+            )
+
+    def update_avatar(self, b64: str):
+        """Обновить аватарку в AppBar после загрузки новой."""
+        try:
+            new_widget = ft.Container(
+                content=ft.Image(
+                    src_base64=b64,
+                    width=32, height=32,
+                    fit=ft.ImageFit.COVER,
+                    border_radius=ft.border_radius.all(16),
+                ),
+                width=32, height=32,
+                border_radius=ft.border_radius.all(16),
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            )
+            # The GestureDetector is actions[-2], update its content
+            gesture = self.actions[-2]
+            gesture.content = new_widget
+            gesture.update()
+        except Exception as ex:
+            print(f"[Header] update_avatar error: {ex}")
 
     def on_account_tap(self, e):
         if self.on_account_click:
@@ -116,8 +160,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.GREEN_50,
-                        border=ft.border.all(1, ft.Colors.GREEN_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.GREEN_400),
+                        border=ft.border.all(1, ft.Colors.GREEN_700),
                     ),
                     
                     ft.Container(height=10),
@@ -136,8 +180,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.BLUE_50,
-                        border=ft.border.all(1, ft.Colors.BLUE_200),
+                        bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.BLUE_400),
+                        border=ft.border.all(1, ft.Colors.BLUE_400),
                     ),
                     
                     ft.Container(height=10),
@@ -156,8 +200,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.PURPLE_50,
-                        border=ft.border.all(1, ft.Colors.PURPLE_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.PURPLE_400),
+                        border=ft.border.all(1, ft.Colors.PURPLE_700),
                     ),
                     
                     ft.Container(height=10),
@@ -176,8 +220,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.ORANGE_50,
-                        border=ft.border.all(1, ft.Colors.ORANGE_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.ORANGE_400),
+                        border=ft.border.all(1, ft.Colors.ORANGE_700),
                     ),
                 ], spacing=0, scroll=ft.ScrollMode.AUTO),
                 width=450,
@@ -252,7 +296,7 @@ class Header(ft.AppBar):
                 ts = ts.strftime("%b %d %H:%M")
             history_rows.append(ft.Row([
                 ft.Text(item.get("reason", ""), size=11, expand=True,
-                        color=ft.Colors.GREY_700, max_lines=1,
+                        color=ft.Colors.GREY_500, max_lines=1,
                         overflow=ft.TextOverflow.ELLIPSIS),
                 ft.Text(f"{sign}{amt} cr", size=11,
                         weight=ft.FontWeight.BOLD, color=color),
@@ -262,18 +306,18 @@ class Header(ft.AppBar):
             modal=True,
             title=ft.Row([
                 ft.Icon(ft.Icons.STARS_ROUNDED, color=ft.Colors.AMBER_600, size=26),
-                ft.Text("Credits", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text(translations.get("credits"), size=20, weight=ft.FontWeight.BOLD),
             ], spacing=10),
             content=ft.Container(
                 content=ft.Column([
                     ft.Container(
                         content=ft.Column([
-                            ft.Text("Your balance", size=12, color=ft.Colors.GREY_600),
+                            ft.Text(translations.get("your_balance"), size=12, color=ft.Colors.GREY_500),
                             ft.Text(f"{credits} credits", size=30,
                                     weight=ft.FontWeight.BOLD, color=ft.Colors.AMBER_700),
                         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
-                        padding=20, border_radius=12, bgcolor=ft.Colors.AMBER_50,
-                        border=ft.border.all(2, ft.Colors.AMBER_200),
+                        padding=20, border_radius=12, bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.AMBER_400),
+                        border=ft.border.all(2, ft.Colors.AMBER_400),
                         alignment=ft.alignment.center,
                     ),
                     ft.Container(height=12),
@@ -281,36 +325,37 @@ class Header(ft.AppBar):
                         content=ft.Column([
                             ft.Row([ft.Icon(ft.Icons.INFO_OUTLINE, size=15,
                                             color=ft.Colors.BLUE_600),
-                                    ft.Text("What costs credits", size=13,
+                                    ft.Text(translations.get("what_costs_credits"), size=13,
                                             weight=ft.FontWeight.BOLD)], spacing=6),
                             ft.Container(height=4),
                             *cost_rows,
                             ft.Container(height=4),
-                            ft.Text("✅ Free: events, tasks, calendar, grocery store",
+                            ft.Text(translations.get("free_features"),
                                     size=11, color=ft.Colors.GREEN_700, italic=True),
                         ], spacing=4),
                         padding=14, border_radius=10,
-                        bgcolor=ft.Colors.BLUE_50,
-                        border=ft.border.all(1, ft.Colors.BLUE_200),
+                        bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.BLUE_400),
+                        border=ft.border.all(1, ft.Colors.BLUE_400),
                     ),
                     ft.Container(height=12),
-                    ft.Text("Recent activity", size=13, weight=ft.FontWeight.BOLD,
-                            color=ft.Colors.GREY_700),
+                    ft.Text(translations.get("recent_activity"), size=13, weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.GREY_500),
                     ft.Container(
                         content=ft.Column(
                             history_rows if history_rows
-                            else [ft.Text("No activity yet", size=12,
+                            else [ft.Text(translations.get("no_activity"), size=12,
                                           color=ft.Colors.GREY_500)],
                             spacing=5,
+                            scroll=ft.ScrollMode.AUTO,
                         ),
                         padding=12, border_radius=8,
-                        bgcolor=ft.Colors.GREY_50, height=120,
+                        bgcolor=ft.Colors.GREY_200, height=150,
                     ),
                 ], spacing=0, scroll=ft.ScrollMode.AUTO),
                 width=390, height=480,
             ),
             actions=[ft.TextButton(
-                "Close", on_click=lambda _: self.page_ref.close(dialog),
+                translations.get("close"), on_click=lambda _: self.page_ref.close(dialog),
                 style=ft.ButtonStyle(color=ft.Colors.WHITE,
                                      bgcolor=ft.Colors.BLUE_600, padding=15),
             )],
@@ -397,8 +442,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.BLUE_50,
-                        border=ft.border.all(1, ft.Colors.BLUE_200),
+                        bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.BLUE_400),
+                        border=ft.border.all(1, ft.Colors.BLUE_400),
                     ),
                     
                     ft.Container(height=15),
@@ -415,8 +460,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.PURPLE_50,
-                        border=ft.border.all(1, ft.Colors.PURPLE_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.PURPLE_400),
+                        border=ft.border.all(1, ft.Colors.PURPLE_700),
                     ),
                     
                     ft.Container(height=15),
@@ -433,8 +478,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.GREEN_50,
-                        border=ft.border.all(1, ft.Colors.GREEN_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.GREEN_400),
+                        border=ft.border.all(1, ft.Colors.GREEN_700),
                     ),
                     
                     ft.Container(height=15),
@@ -468,8 +513,8 @@ class Header(ft.AppBar):
                             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ], spacing=4),
                         padding=15, border_radius=8,
-                        bgcolor=ft.Colors.TEAL_50,
-                        border=ft.border.all(1, ft.Colors.TEAL_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.TEAL_400),
+                        border=ft.border.all(1, ft.Colors.TEAL_700),
                     ),
                     
                     ft.Container(height=15),
@@ -500,8 +545,8 @@ class Header(ft.AppBar):
                         ]),
                         padding=15,
                         border_radius=8,
-                        bgcolor=ft.Colors.ORANGE_50,
-                        border=ft.border.all(1, ft.Colors.ORANGE_200),
+                        bgcolor=ft.Colors.with_opacity(0.07, ft.Colors.ORANGE_400),
+                        border=ft.border.all(1, ft.Colors.ORANGE_700),
                     ),
                 ], spacing=0, scroll=ft.ScrollMode.AUTO),
                 width=400,

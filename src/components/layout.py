@@ -17,7 +17,7 @@ class AppLayout(ft.Row):
         self.on_logout = on_logout
         self.expand = True
         self.spacing = 0
-        self.faq_view = FAQView()
+        self.faq_view = FAQView(self.page)
 
         
         # Sidebar

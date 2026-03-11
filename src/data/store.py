@@ -713,6 +713,41 @@ class EventStore:
             print(f"Error updating username: {e}")
             return False, str(e)
 
+
+    def save_avatar_url(self, user_id, avatar_url: str):
+        """Сохранить base64 аватарки пользователя."""
+        if self.db is None:
+            return False, "Database not connected"
+        try:
+            from bson.objectid import ObjectId
+            oid = ObjectId(user_id) if isinstance(user_id, str) else user_id
+            self.db.users.update_one(
+                {"_id": oid},
+                {"$set": {"avatar_url": avatar_url}}
+            )
+            return True, "Avatar saved"
+        except Exception as e:
+            print(f"Error saving avatar: {e}")
+            return False, str(e)
+
+    def get_avatar_url(self, user_id=None) -> str:
+        """Получить base64 аватарки пользователя."""
+        if self.db is None:
+            return ""
+        uid = user_id or self.user_id
+        if not uid:
+            return ""
+        try:
+            from bson.objectid import ObjectId
+            oid = ObjectId(uid) if isinstance(uid, str) else uid
+            user = self.db.users.find_one({"_id": oid})
+            if user:
+                return user.get("avatar_url", "")
+            return ""
+        except Exception as e:
+            print(f"Error getting avatar: {e}")
+            return ""
+
     def change_password(self, user_id, current_password, new_password):
         """Сменить пароль пользователя."""
         if self.db is None:
@@ -901,6 +936,128 @@ class EventStore:
         except Exception as e:
             print(f"Error getting credits history: {e}")
             return []
+        
+    def grant_gamemode_privileges(self, user_id: str):
+        """
+        ✅ НОВОЕ: Выдаёт неограниченные права для аккаунта gamemode
+        
+        Args:
+            user_id: ID пользователя gamemode
+        """
+        try:
+            from datetime import datetime
+            
+            # Устанавливаем бесконечные кредиты и деньги
+            self.db.users.update_one(
+                {"_id": user_id},
+                {
+                    "$set": {
+                        "credits": 999999999,
+                        "grocery_budget": 999999999,
+                        "is_moderator": True,
+                        "gamemode_activated_at": datetime.now().isoformat()
+                    }
+                }
+            )
+            
+            print(f"🔑 Gamemode privileges granted to user {user_id}")
+            print(f"💰 Credits: 999999999")
+            print(f"🛒 Budget: 999999999")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error granting gamemode privileges: {e}")
+            return False
+
+    def is_gamemode_account(self, user_id: str) -> bool:
+        """
+        ✅ НОВОЕ: Проверяет является ли аккаунт gamemode
+        
+        Args:
+            user_id: ID пользователя
+            
+        Returns:
+            bool - True если gamemode аккаунт
+        """
+        try:
+            user = self.db.users.find_one({"_id": user_id})
+            if user:
+                return user.get("is_moderator", False)
+            return False
+        except Exception as e:
+            print(f"❌ Error checking gamemode: {e}")
+            return False
+
+    def delete_user_completely(self, user_id: str):
+        """
+        ✅ ИСПРАВЛЕНО: Полностью удаляет пользователя из всех коллекций
+        Теперь никнейм освобождается для повторного использования
+        
+        Args:
+            user_id: ID пользователя для удаления
+        """
+        try:
+            from bson.objectid import ObjectId
+            
+            # 1. Удаляем пользователя из users
+            result = self.db.users.delete_one({"_id": user_id})
+            print(f"✅ Deleted user from users collection: {result.deleted_count}")
+            
+            # 2. Удаляем все события пользователя
+            events_result = self.db.events.delete_many({"user_id": user_id})
+            print(f"✅ Deleted {events_result.deleted_count} events")
+            
+            # 3. Удаляем предпочтения диеты
+            diet_result = self.db.diet_preferences.delete_many({"user_id": user_id})
+            print(f"✅ Deleted {diet_result.deleted_count} diet preferences")
+            
+            # 4. Удаляем историю покупок в магазине (если есть)
+            if "grocery_purchases" in self.db.list_collection_names():
+                grocery_result = self.db.grocery_purchases.delete_many({"user_id": user_id})
+                print(f"✅ Deleted {grocery_result.deleted_count} grocery purchases")
+            
+            # 5. Удаляем историю транзакций кредитов (если есть)
+            if "credit_transactions" in self.db.list_collection_names():
+                credit_result = self.db.credit_transactions.delete_many({"user_id": user_id})
+                print(f"✅ Deleted {credit_result.deleted_count} credit transactions")
+            
+            print(f"🗑️ User {user_id} completely deleted - username is now available")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error deleting user: {e}")
+            return False
+
+    def check_username_available(self, username: str, exclude_user_id: str = None) -> bool:
+        """
+        ✅ ИСПРАВЛЕНО: Проверяет доступность никнейма (учитывая удалённых пользователей)
+        
+        Args:
+            username: Никнейм для проверки
+            exclude_user_id: ID пользователя которого нужно исключить из проверки (для редактирования)
+            
+        Returns:
+            bool - True если никнейм доступен
+        """
+        try:
+            query = {"username": username}
+            
+            # Исключаем текущего пользователя при редактировании профиля
+            if exclude_user_id:
+                query["_id"] = {"$ne": exclude_user_id}
+            
+            existing_user = self.db.users.find_one(query)
+            
+            if existing_user:
+                print(f"❌ Username '{username}' is already taken")
+                return False
+            else:
+                print(f"✅ Username '{username}' is available")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Error checking username: {e}")
+            return False
 
 
 # Global instance

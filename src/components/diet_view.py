@@ -30,6 +30,12 @@ class DietView(ft.Column):
     def build_ui(self):
         """Строит интерфейс страницы диеты"""
         # Заголовок страницы
+        is_light_theme = self.page_ref.theme_mode == ft.ThemeMode.LIGHT
+        self.text_primary = ft.Colors.GREY_900 if is_light_theme else ft.Colors.GREY_100
+        self.text_secondary = ft.Colors.GREY_700 if is_light_theme else ft.Colors.GREY_300
+        self.text_muted = ft.Colors.GREY_600 if is_light_theme else ft.Colors.GREY_400
+        self.icon_muted = ft.Colors.GREY_600 if is_light_theme else ft.Colors.GREY_400
+
         header = ft.Row(
             controls=[
                 ft.Text(
@@ -57,19 +63,19 @@ class DietView(ft.Column):
         empty_container = ft.Container(
             content=ft.Column(
                 controls=[
-                    ft.Icon(ft.Icons.RESTAURANT_MENU, size=80, color=ft.Colors.GREY_400),
+                    ft.Icon(ft.Icons.RESTAURANT_MENU, size=80, color=self.icon_muted),
                     ft.Container(height=20),
                     ft.Text(
                         "No diet preferences set",
                         size=22,
                         weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.GREY_700
+                        color=self.text_primary
                     ),
                     ft.Container(height=10),
                     ft.Text(
                         "Take our quick quiz to get personalized diet recommendations!",
                         size=14,
-                        color=ft.Colors.GREY_600,
+                        color=self.text_secondary,
                         text_align=ft.TextAlign.CENTER,
                         width=400
                     ),
@@ -111,7 +117,7 @@ class DietView(ft.Column):
                 spacing=10
             ),
             padding=ft.padding.symmetric(vertical=15, horizontal=20),
-            bgcolor=ft.Colors.BLUE_50,
+            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400),
             border_radius=ft.border_radius.only(top_left=10, top_right=10),
             border=ft.border.only(
                 left=ft.BorderSide(3, ft.Colors.BLUE_400),
@@ -131,7 +137,7 @@ class DietView(ft.Column):
             padding=20,
             border=ft.border.all(1, ft.Colors.BLUE_200),
             border_radius=ft.border_radius.only(bottom_left=10, bottom_right=10),
-            bgcolor=ft.Colors.WHITE
+            bgcolor=ft.Colors.SURFACE
         )
         
         # Получаем текущие значения
@@ -152,7 +158,7 @@ class DietView(ft.Column):
                 "emoji": "⚖️",
                 "icon": ft.Icons.TRENDING_DOWN,
                 "color": ft.Colors.ORANGE_600,
-                "light_color": ft.Colors.ORANGE_50,
+                "light_color": ft.Colors.with_opacity(0.12, ft.Colors.ORANGE_400),
                 "border_color": ft.Colors.ORANGE_300,
             },
             "muscle_gain": {
@@ -160,7 +166,7 @@ class DietView(ft.Column):
                 "emoji": "💪",
                 "icon": ft.Icons.FITNESS_CENTER,
                 "color": ft.Colors.PURPLE_600,
-                "light_color": ft.Colors.PURPLE_50,
+                "light_color": ft.Colors.with_opacity(0.12, ft.Colors.PURPLE_400),
                 "border_color": ft.Colors.PURPLE_300,
             },
             "healthy_lifestyle": {
@@ -168,7 +174,7 @@ class DietView(ft.Column):
                 "emoji": "🏃",
                 "icon": ft.Icons.FAVORITE,
                 "color": ft.Colors.GREEN_600,
-                "light_color": ft.Colors.GREEN_50,
+                "light_color": ft.Colors.with_opacity(0.12, ft.Colors.GREEN_400),
                 "border_color": ft.Colors.GREEN_300,
             },
             "meal_planning": {
@@ -176,7 +182,7 @@ class DietView(ft.Column):
                 "emoji": "🍽️",
                 "icon": ft.Icons.RESTAURANT_MENU,
                 "color": ft.Colors.BLUE_600,
-                "light_color": ft.Colors.BLUE_50,
+                "light_color": ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400),
                 "border_color": ft.Colors.BLUE_300,
             }
         }
@@ -187,7 +193,7 @@ class DietView(ft.Column):
             content=ft.Column([
                 # Заголовок с кнопкой Edit
                 ft.Row([
-                    ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_800),
+                    ft.Text("Diet Goal", size=16, weight=ft.FontWeight.BOLD, color=self.text_primary),
                     ft.Container(expand=True),
                     ft.TextButton(
                         "Edit",
@@ -229,7 +235,7 @@ class DietView(ft.Column):
                                 ft.Text(
                                     "Your current diet objective",
                                     size=12,
-                                    color=ft.Colors.GREY_600,
+                                    color=self.text_secondary,
                                     italic=True
                                 ),
                             ], spacing=5),
@@ -250,7 +256,7 @@ class DietView(ft.Column):
                     ], spacing=0),
                     border=ft.border.all(2, current_goal_info["border_color"]),
                     border_radius=12,
-                    bgcolor=ft.Colors.WHITE,
+                    bgcolor=ft.Colors.SURFACE,
                     shadow=ft.BoxShadow(
                         spread_radius=0,
                         blur_radius=8,
@@ -286,7 +292,7 @@ class DietView(ft.Column):
                 height=50,
                 border=ft.border.all(2, ft.Colors.GREEN_400 if is_selected else ft.Colors.GREY_300),
                 border_radius=10,
-                bgcolor=ft.Colors.GREEN_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.GREEN_400) if is_selected else None,
                 padding=10,
                 on_click=lambda e, v=value: self.toggle_meal_type(v),
                 ink=True
@@ -302,7 +308,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.GREY_200),
             border_radius=8,
-            bgcolor=ft.Colors.GREY_50
+            bgcolor=ft.Colors.with_opacity(0.06, ft.Colors.GREY_400)
         )
         
         preferences_container.content.controls.append(meal_section)
@@ -327,7 +333,7 @@ class DietView(ft.Column):
                 padding=10,
                 border=ft.border.all(2, ft.Colors.BLUE_400 if is_selected else ft.Colors.GREY_300),
                 border_radius=20,
-                bgcolor=ft.Colors.BLUE_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400) if is_selected else None,
                 on_click=lambda e, v=value: self.toggle_cuisine(v),
                 ink=True
             )
@@ -342,7 +348,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.GREY_200),
             border_radius=8,
-            bgcolor=ft.Colors.GREY_50
+            bgcolor=ft.Colors.with_opacity(0.06, ft.Colors.GREY_400)
         )
         
         preferences_container.content.controls.append(cuisine_section)
@@ -367,7 +373,7 @@ class DietView(ft.Column):
                 padding=10,
                 border=ft.border.all(2, ft.Colors.RED_400 if is_selected else ft.Colors.GREY_300),
                 border_radius=20,
-                bgcolor=ft.Colors.RED_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.RED_400) if is_selected else None,
                 on_click=lambda e, v=value: self.toggle_avoid(v),
                 ink=True
             )
@@ -382,7 +388,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.GREY_200),
             border_radius=8,
-            bgcolor=ft.Colors.GREY_50
+            bgcolor=ft.Colors.with_opacity(0.06, ft.Colors.GREY_400)
         )
         
         preferences_container.content.controls.append(avoid_section)
@@ -399,7 +405,7 @@ class DietView(ft.Column):
                 padding=15,
                 border=ft.border.all(2, ft.Colors.PURPLE_400 if is_selected else ft.Colors.GREY_300),
                 border_radius=10,
-                bgcolor=ft.Colors.PURPLE_50 if is_selected else None,
+                bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.PURPLE_400) if is_selected else None,
                 on_click=lambda e, f=freq: self.set_meal_frequency(f),
                 ink=True
             )
@@ -414,7 +420,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.GREY_200),
             border_radius=8,
-            bgcolor=ft.Colors.GREY_50
+            bgcolor=ft.Colors.with_opacity(0.06, ft.Colors.GREY_400)
         )
         
         preferences_container.content.controls.append(freq_section)
@@ -439,7 +445,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.ORANGE_300),
             border_radius=8,
-            bgcolor=ft.Colors.ORANGE_50
+            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.ORANGE_400)
         )
         
         preferences_container.content.controls.append(medical_section)
@@ -492,7 +498,7 @@ class DietView(ft.Column):
                         ft.Text(
                             f"Week: {store.get_week_range()}",
                             size=12,
-                            color=ft.Colors.GREY_600
+                        color=self.text_secondary
                         ),
                     ], spacing=2),
                     ft.Container(expand=True),
@@ -524,7 +530,7 @@ class DietView(ft.Column):
                 spacing=10
             ),
             padding=ft.padding.symmetric(vertical=15, horizontal=20),
-            bgcolor=ft.Colors.GREEN_50,
+            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.GREEN_400),
             border_radius=ft.border_radius.only(top_left=10, top_right=10),
             border=ft.border.only(
                 left=ft.BorderSide(3, ft.Colors.GREEN_400),
@@ -547,19 +553,19 @@ class DietView(ft.Column):
         meal_plan_container = ft.Container(
             content=ft.Column(
                 controls=[
-                    ft.Icon(ft.Icons.RESTAURANT, size=60, color=ft.Colors.GREY_400),
+                    ft.Icon(ft.Icons.RESTAURANT, size=60, color=self.icon_muted),
                     ft.Container(height=10),
                     ft.Text(
                         "No meal plan generated yet",
                         size=18,
-                        color=ft.Colors.GREY_600,
+                        color=self.text_secondary,
                         text_align=ft.TextAlign.CENTER
                     ),
                     ft.Container(height=5),
                     ft.Text(
                         "Click 'Generate Meal Plan' to get AI-powered recommendations",
                         size=14,
-                        color=ft.Colors.GREY_500,
+                        color=self.text_muted,
                         text_align=ft.TextAlign.CENTER
                     ),
                 ],
@@ -570,7 +576,7 @@ class DietView(ft.Column):
             padding=20,
             border=ft.border.all(1, ft.Colors.GREEN_200),
             border_radius=ft.border_radius.only(bottom_left=10, bottom_right=10),
-            bgcolor=ft.Colors.WHITE,
+            bgcolor=ft.Colors.SURFACE,
             alignment=ft.alignment.center
         )
         
@@ -618,7 +624,7 @@ class DietView(ft.Column):
                     content=ft.Text(day_name, weight=ft.FontWeight.BOLD, size=12),
                     width=100,
                     padding=10,
-                    bgcolor=ft.Colors.GREEN_50
+                    bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.GREEN_400)
                 )
             ]
             
@@ -650,22 +656,22 @@ class DietView(ft.Column):
                                 add_to_calendar_btn,  # ✅ НОВАЯ КНОПКА
                                 replace_btn
                             ]),
-                            ft.Text(f"{meal.get('calories', 0)} kcal", size=10, color=ft.Colors.GREY_600),
+                            ft.Text(f"{meal.get('calories', 0)} kcal", size=10, color=self.text_secondary),
                             ft.Text(
                                 f"P: {meal.get('protein', 0)}g | C: {meal.get('carbs', 0)}g | F: {meal.get('fats', 0)}g",
                                 size=9,
-                                color=ft.Colors.GREY_500
+                                color=self.text_muted
                             ),
                         ], spacing=2),
                         padding=8,
                         border=ft.border.all(1, ft.Colors.GREEN_200),
                         border_radius=5,
-                        bgcolor=ft.Colors.WHITE,
+                        bgcolor=ft.Colors.SURFACE,
                         expand=True
                     )
                 else:
                     meal_card = ft.Container(
-                        content=ft.Text("—", color=ft.Colors.GREY_400),
+                        content=ft.Text("—", color=self.text_muted),
                         padding=10,
                         alignment=ft.alignment.center,
                         expand=True
@@ -687,7 +693,7 @@ class DietView(ft.Column):
             padding=15,
             border=ft.border.all(1, ft.Colors.GREEN_200),
             border_radius=ft.border_radius.only(bottom_left=10, bottom_right=10),
-            bgcolor=ft.Colors.WHITE
+            bgcolor=ft.Colors.SURFACE
         )
         
         self.controls.append(table_container)
@@ -744,13 +750,13 @@ class DietView(ft.Column):
                     # Калории
                     ft.Container(
                         content=ft.Column([
-                            ft.Text("Calories", size=11, color=ft.Colors.GREY_600),
+                            ft.Text("Calories", size=11, color=self.text_secondary),
                             ft.Text(f"{avg_calories}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700),
-                            ft.Text("kcal", size=10, color=ft.Colors.GREY_500),
+                            ft.Text("kcal", size=10, color=self.text_muted),
                         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
                         padding=12,
                         border_radius=8,
-                        bgcolor=ft.Colors.ORANGE_50,
+                        bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.ORANGE_400),
                         border=ft.border.all(1, ft.Colors.ORANGE_200),
                         expand=True,
                     ),
@@ -758,13 +764,13 @@ class DietView(ft.Column):
                     # Белки
                     ft.Container(
                         content=ft.Column([
-                            ft.Text("Protein", size=11, color=ft.Colors.GREY_600),
+                            ft.Text("Protein", size=11, color=self.text_secondary),
                             ft.Text(f"{avg_protein}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_700),
-                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                            ft.Text("grams", size=10, color=self.text_muted),
                         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
                         padding=12,
                         border_radius=8,
-                        bgcolor=ft.Colors.RED_50,
+                        bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.RED_400),
                         border=ft.border.all(1, ft.Colors.RED_200),
                         expand=True,
                     ),
@@ -772,13 +778,13 @@ class DietView(ft.Column):
                     # Углеводы
                     ft.Container(
                         content=ft.Column([
-                            ft.Text("Carbs", size=11, color=ft.Colors.GREY_600),
+                            ft.Text("Carbs", size=11, color=self.text_secondary),
                             ft.Text(f"{avg_carbs}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
-                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                            ft.Text("grams", size=10, color=self.text_muted),
                         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
                         padding=12,
                         border_radius=8,
-                        bgcolor=ft.Colors.BLUE_50,
+                        bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.BLUE_400),
                         border=ft.border.all(1, ft.Colors.BLUE_200),
                         expand=True,
                     ),
@@ -786,20 +792,20 @@ class DietView(ft.Column):
                     # Жиры
                     ft.Container(
                         content=ft.Column([
-                            ft.Text("Fats", size=11, color=ft.Colors.GREY_600),
+                            ft.Text("Fats", size=11, color=self.text_secondary),
                             ft.Text(f"{avg_fats}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
-                            ft.Text("grams", size=10, color=ft.Colors.GREY_500),
+                            ft.Text("grams", size=10, color=self.text_muted),
                         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
                         padding=12,
                         border_radius=8,
-                        bgcolor=ft.Colors.PURPLE_50,
+                        bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.PURPLE_400),
                         border=ft.border.all(1, ft.Colors.PURPLE_200),
                         expand=True,
                     ),
                 ], spacing=10),
             ], spacing=5),
             padding=15,
-            bgcolor=ft.Colors.GREEN_50,
+            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.GREEN_400),
             border_radius=10,
             border=ft.border.all(1, ft.Colors.GREEN_200),
         )

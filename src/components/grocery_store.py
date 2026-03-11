@@ -184,7 +184,7 @@ class GroceryStore(ft.Container):
                 ]),
                 padding=15,
                 border_radius=8,
-                border=ft.border.all(1, ft.Colors.OUTLINE),  # ✅ Тёмная тема
+                border=ft.border.all(1, ft.Colors.GREY_400),  # ✅ Тёмная тема
                 bgcolor=None,  # ✅ Тёмная тема
             )
             items_list.append(item_card)
@@ -198,8 +198,8 @@ class GroceryStore(ft.Container):
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             padding=20,
             border_radius=10,
-            bgcolor=ft.Colors.GREEN_50,
-            border=ft.border.all(2, ft.Colors.GREEN_200),
+            bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.GREEN_400),
+            border=ft.border.all(2, ft.Colors.GREEN_600),
         )
         
         return ft.Container(
@@ -240,7 +240,7 @@ class GroceryStore(ft.Container):
         
         # Показываем уведомление
         snackbar = ft.SnackBar(
-            content=ft.Text("✅ Item removed"),
+            content=ft.Text(f"✅ {translations.get('item_removed_msg')}"),
             bgcolor=ft.Colors.ORANGE_600,
             duration=1000,
         )
@@ -332,7 +332,7 @@ class GroceryStore(ft.Container):
             content=ft.Row([
                 # Left: Store info
                 ft.Column([
-                    ft.Text("🛒 Grocery Store", size=24, weight=ft.FontWeight.BOLD),
+                    ft.Text(translations.get("shop_title"), size=24, weight=ft.FontWeight.BOLD),
                     ft.Row([
                         ft.Icon(ft.Icons.LOCATION_ON, size=14, color=ft.Colors.GREY_600),
                         ft.Text("Small, Semey", size=12, color=ft.Colors.GREY_600),
@@ -347,7 +347,7 @@ class GroceryStore(ft.Container):
                         ft.Icon(budget_icon, size=20, color=budget_color),
                         ft.Text(f"{remaining:,} ₸", size=20, weight=ft.FontWeight.BOLD, color=budget_color),
                     ], spacing=8),
-                    ft.Text(f"of {budget:,} ₸", size=12, color=ft.Colors.GREY_600),
+                    ft.Text(f"{translations.get('budget_remaining')} {budget:,} ₸", size=12, color=ft.Colors.GREY_700),
                 ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=2),
                 
                 ft.Container(width=10),
@@ -355,7 +355,7 @@ class GroceryStore(ft.Container):
                 # Budget settings
                 ft.IconButton(
                     icon=ft.Icons.SETTINGS,
-                    tooltip="Change budget",
+                    tooltip=translations.get("change_budget"),
                     on_click=lambda _: self.show_budget_dialog()
                 ),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -484,9 +484,9 @@ class GroceryStore(ft.Container):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0),
             padding=15,
             border_radius=10,
-            bgcolor=ft.Colors.WHITE,
+            bgcolor=ft.Colors.SURFACE,
             border=ft.border.all(1, ft.Colors.GREY_300),
-            shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.GREY_400),
+            shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK)),
         )
     
     def increase_quantity(self, product):
@@ -559,7 +559,7 @@ class GroceryStore(ft.Container):
         
         # ✅ ИСПРАВЛЕНО: Правильный API для snackbar
         snackbar = ft.SnackBar(
-            content=ft.Text(f"✅ {product['name']} added to cart"),
+            content=ft.Text(f"✅ {product['name']} {translations.get('added_to_cart')}"),
             bgcolor=ft.Colors.GREEN_600,
             duration=1000,
         )
@@ -662,11 +662,11 @@ class GroceryStore(ft.Container):
                 # Left: Summary
                 ft.Column([
                     ft.Row([
-                        ft.Text("Selected:", size=12, color=ft.Colors.GREY_700),
-                        ft.Text(f"{total_items} items", size=12, weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{translations.get('selected')}:", size=12),
+                        ft.Text(f"{total_items} {translations.get('items')}", size=12, weight=ft.FontWeight.BOLD),
                     ], spacing=5),
                     ft.Row([
-                        ft.Text("Total:", size=14, weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{translations.get('total')}:", size=14, weight=ft.FontWeight.BOLD),
                         ft.Text(f"{subtotal:,} ₸", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_600),
                     ], spacing=8),
                 ], spacing=2),
@@ -675,7 +675,7 @@ class GroceryStore(ft.Container):
                 
                 # Middle: Remaining
                 ft.Column([
-                    ft.Text("After purchase:", size=11, color=ft.Colors.GREY_600),
+                    ft.Text(translations.get("after_purchase"), size=11),
                     ft.Row([
                         ft.Icon(ft.Icons.ACCOUNT_BALANCE_WALLET, size=16, color=remaining_color),
                         ft.Text(f"{remaining:,} ₸", size=14, weight=ft.FontWeight.BOLD, color=remaining_color),
@@ -687,13 +687,13 @@ class GroceryStore(ft.Container):
                 # Right: Buttons
                 ft.Row([
                     ft.OutlinedButton(
-                        "Clear",
+                        translations.get("clear"),
                         icon=ft.Icons.CLEAR,
                         on_click=lambda _: self.clear_cart(),
                         style=ft.ButtonStyle(color=ft.Colors.RED_600),
                     ),
                     ft.ElevatedButton(
-                        "Buy Selected",
+                        translations.get("buy_selected"),
                         icon=ft.Icons.SHOPPING_CART_CHECKOUT,
                         on_click=lambda _: self.show_cart(),
                         disabled=remaining < 0,

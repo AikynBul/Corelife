@@ -16,15 +16,15 @@ PRODUCTS = {
     "vegetables": [
         {"id": "potato", "name": "Potatoes", "name_ru": "Картофель", "unit": "1 kg", "price": 200, "icon": "🥔"},
         {"id": "carrot", "name": "Carrots", "name_ru": "Морковь", "unit": "1 kg", "price": 250, "icon": "🥕"},
-        {"id": "onion", "name": "Onions", "name_ru": "Лук", "unit": "1 kg", "price": 180, "icon": "🧅"},
+        {"id": "onion", "name": "Onions", "name_ru": "Лук", "unit": "1 kg", "price": 180, "icon": "🟣"},
         {"id": "tomato", "name": "Tomatoes", "name_ru": "Помидоры", "unit": "1 kg", "price": 600, "icon": "🍅"},
         {"id": "cucumber", "name": "Cucumbers", "name_ru": "Огурцы", "unit": "1 kg", "price": 500, "icon": "🥒"},
-        {"id": "pepper", "name": "Bell Pepper", "name_ru": "Перец", "unit": "1 kg", "price": 800, "icon": "🫑"},
+        {"id": "pepper", "name": "Bell Pepper", "name_ru": "Перец", "unit": "1 kg", "price": 800, "icon": "🌶️"},
         {"id": "cabbage", "name": "Cabbage", "name_ru": "Капуста", "unit": "1 kg", "price": 150, "icon": "🥬"},
     ],
     
     "meat": [
-        {"id": "chicken_breast", "name": "Chicken Breast", "name_ru": "Куриная грудка", "unit": "1 kg", "price": 2500, "icon": "🍗"},
+        {"id": "chicken_breast", "name": "Chicken Breast", "name_ru": "Куриная грудка", "unit": "1 kg", "price": 2500, "icon": "🐔"},
         {"id": "chicken_legs", "name": "Chicken Legs", "name_ru": "Куриные ножки", "unit": "1 kg", "price": 1800, "icon": "🍗"},
         {"id": "beef", "name": "Beef", "name_ru": "Говядина", "unit": "1 kg", "price": 3500, "icon": "🥩"},
         {"id": "pork", "name": "Pork", "name_ru": "Свинина", "unit": "1 kg", "price": 2800, "icon": "🥓"},
@@ -36,9 +36,9 @@ PRODUCTS = {
         {"id": "milk", "name": "Milk", "name_ru": "Молоко", "unit": "1 L", "price": 350, "icon": "🥛"},
         {"id": "cheese", "name": "Cheese", "name_ru": "Сыр", "unit": "500 g", "price": 1200, "icon": "🧀"},
         {"id": "cottage_cheese", "name": "Cottage Cheese", "name_ru": "Творог", "unit": "500 g", "price": 500, "icon": "🧀"},
-        {"id": "yogurt", "name": "Yogurt", "name_ru": "Йогурт", "unit": "500 g", "price": 400, "icon": "🥛"},
-        {"id": "butter", "name": "Butter", "name_ru": "Сливочное масло", "unit": "200 g", "price": 600, "icon": "🧈"},
-        {"id": "sour_cream", "name": "Sour Cream", "name_ru": "Сметана", "unit": "500 g", "price": 450, "icon": "🥛"},
+        {"id": "yogurt", "name": "Yogurt", "name_ru": "Йогурт", "unit": "500 g", "price": 400, "icon": "🍨"},
+        {"id": "butter", "name": "Butter", "name_ru": "Сливочное масло", "unit": "200 g", "price": 600, "icon": "🥣"},
+        {"id": "sour_cream", "name": "Sour Cream", "name_ru": "Сметана", "unit": "500 g", "price": 450, "icon": "🥄"},
     ],
     
     "bakery": [
@@ -47,12 +47,12 @@ PRODUCTS = {
         {"id": "pasta", "name": "Pasta", "name_ru": "Макароны", "unit": "500 g", "price": 300, "icon": "🍝"},
         {"id": "rice", "name": "Rice", "name_ru": "Рис", "unit": "1 kg", "price": 400, "icon": "🍚"},
         {"id": "buckwheat", "name": "Buckwheat", "name_ru": "Гречка", "unit": "1 kg", "price": 450, "icon": "🌾"},
-        {"id": "flour", "name": "Flour", "name_ru": "Мука", "unit": "1 kg", "price": 250, "icon": "🌾"},
+        {"id": "flour", "name": "Flour", "name_ru": "Мука", "unit": "1 kg", "price": 250, "icon": "🌫️"},
     ],
     
     "other": [
-        {"id": "sunflower_oil", "name": "Sunflower Oil", "name_ru": "Подсолнечное масло", "unit": "1 L", "price": 800, "icon": "🛢️"},
-        {"id": "olive_oil", "name": "Olive Oil", "name_ru": "Оливковое масло", "unit": "500 ml", "price": 1500, "icon": "🫒"},
+        {"id": "sunflower_oil", "name": "Sunflower Oil", "name_ru": "Подсолнечное масло", "unit": "1 L", "price": 800, "icon": "🌻"},
+        {"id": "olive_oil", "name": "Olive Oil", "name_ru": "Оливковое масло", "unit": "500 ml", "price": 1500, "icon": "🍶"},
         {"id": "salt", "name": "Salt", "name_ru": "Соль", "unit": "500 g", "price": 100, "icon": "🧂"},
         {"id": "sugar", "name": "Sugar", "name_ru": "Сахар", "unit": "1 kg", "price": 300, "icon": "🍬"},
         {"id": "tea", "name": "Tea", "name_ru": "Чай", "unit": "100 g", "price": 500, "icon": "🍵"},
