@@ -646,6 +646,12 @@ class GroceryStore(ft.Container):
         # Если корзина пустая - не показываем panel
         if total_items == 0:
             return
+
+        is_dark_theme = self.page_ref.theme_mode == ft.ThemeMode.DARK
+        panel_bg = ft.Colors.GREY_900 if is_dark_theme else ft.Colors.WHITE
+        panel_border = ft.Colors.GREY_700 if is_dark_theme else ft.Colors.GREY_300
+        text_primary = ft.Colors.GREY_100 if is_dark_theme else ft.Colors.GREY_900
+        text_secondary = ft.Colors.GREY_300 if is_dark_theme else ft.Colors.GREY_700
         
         # Цвет в зависимости от остатка
         if remaining < 0:
@@ -662,11 +668,21 @@ class GroceryStore(ft.Container):
                 # Left: Summary
                 ft.Column([
                     ft.Row([
-                        ft.Text(f"{translations.get('selected')}:", size=12),
-                        ft.Text(f"{total_items} {translations.get('items')}", size=12, weight=ft.FontWeight.BOLD),
+                        ft.Text(f"{translations.get('selected')}:", size=12, color=text_primary),
+                        ft.Text(
+                            f"{total_items} {translations.get('items')}",
+                            size=12,
+                            weight=ft.FontWeight.BOLD,
+                            color=text_primary,
+                        ),
                     ], spacing=5),
                     ft.Row([
-                        ft.Text(f"{translations.get('total')}:", size=14, weight=ft.FontWeight.BOLD),
+                        ft.Text(
+                            f"{translations.get('total')}:",
+                            size=14,
+                            weight=ft.FontWeight.BOLD,
+                            color=text_primary,
+                        ),
                         ft.Text(f"{subtotal:,} ₸", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_600),
                     ], spacing=8),
                 ], spacing=2),
@@ -675,7 +691,7 @@ class GroceryStore(ft.Container):
                 
                 # Middle: Remaining
                 ft.Column([
-                    ft.Text(translations.get("after_purchase"), size=11),
+                    ft.Text(translations.get("after_purchase"), size=11, color=text_secondary),
                     ft.Row([
                         ft.Icon(ft.Icons.ACCOUNT_BALANCE_WALLET, size=16, color=remaining_color),
                         ft.Text(f"{remaining:,} ₸", size=14, weight=ft.FontWeight.BOLD, color=remaining_color),
@@ -706,8 +722,8 @@ class GroceryStore(ft.Container):
                 ], spacing=10),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             padding=ft.padding.only(left=250, right=15, top=15, bottom=15),  # ✅ Учитываем sidebar!
-            bgcolor=ft.Colors.WHITE,
-            border=ft.border.only(top=ft.BorderSide(2, ft.Colors.GREY_300)),
+            bgcolor=panel_bg,
+            border=ft.border.only(top=ft.BorderSide(2, panel_border)),
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=10,

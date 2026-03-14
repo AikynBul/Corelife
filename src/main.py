@@ -28,7 +28,7 @@ def main(page: ft.Page):
     if os.path.exists(icon_path):
         try:
             # Р”Р»СЏ desktop РїСЂРёР»РѕР¶РµРЅРёР№
-            page.window_icon = icon_path
+            page.window.icon = icon_path
             print(f"вњ… Logo loaded: {icon_path}")
         except Exception as e:
             print(f"вљ пёЏ Could not set icon: {e}")
@@ -180,6 +180,25 @@ def main(page: ft.Page):
             """Handle language change - refresh entire UI"""
             refresh_ui()
 
+        def on_theme_change():
+            """Handle theme change for overlays that are not auto-repainted."""
+            try:
+                chat_widget.refresh_theme()
+            except Exception:
+                pass
+
+            try:
+                is_grocery_active = app_layout.content_area.content == app_layout.grocery_view
+                if is_grocery_active and app_layout.grocery_view.view_mode == "shop" and app_layout.grocery_view.cart:
+                    app_layout.grocery_view.build_bottom_panel()
+            except Exception:
+                pass
+
+            try:
+                page.update()
+            except Exception:
+                pass
+
         def on_menu_click(e):
             """Handle menu button click to toggle sidebar"""
             app_layout.toggle_sidebar()
@@ -189,14 +208,15 @@ def main(page: ft.Page):
             on_account_click,
             on_language_change=on_language_change,
             on_menu_click=on_menu_click,
-            on_theme_change=on_language_change,
+            on_theme_change=on_theme_change,
             user_info=user_info,        # вњ… FIX: РїРµСЂРµРґР°С‘Рј РёРјСЏ РґР»СЏ Р°РІР°С‚Р°СЂР°
         )
         
         # Use Stack to overlay ChatWidget
         # chat_fab_container С…СЂР°РЅРёС‚СЃСЏ РєР°Рє ref С‡С‚РѕР±С‹ GroceryStore РјРѕРі РјРµРЅСЏС‚СЊ bottom
+        chat_widget = ChatWidget(page, on_refresh=app_layout.refresh_active_view)
         chat_fab_container = ft.Container(
-            content=ChatWidget(page, on_refresh=app_layout.refresh_active_view),
+            content=chat_widget,
             right=20,
             bottom=20,
         )
@@ -242,5 +262,6 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main)
+
 
 

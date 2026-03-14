@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 from groq import Groq
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ except Exception:
 load_dotenv()
 
 class DietAIService:
-    """AI ÑÐµÑ€Ð²Ð¸Ñ Ð´Ð»Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ð¸ Ð¿Ð»Ð°Ð½Ð¾Ð² Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ Ñ‡ÐµÑ€ÐµÐ· Groq API"""
+    """AI Г‘ВЃГђВµГ‘в‚¬ГђВІГђВёГ‘ВЃ ГђВґГђВ»Г‘ВЏ ГђВіГђВµГђВЅГђВµГ‘в‚¬ГђВ°Г‘вЂ ГђВёГђВё ГђВїГђВ»ГђВ°ГђВЅГђВѕГђВІ ГђВїГђВёГ‘вЂљГђВ°ГђВЅГђВёГ‘ВЏ Г‘вЂЎГђВµГ‘в‚¬ГђВµГђВ· Groq API"""
     
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
@@ -25,7 +25,7 @@ class DietAIService:
         
         self.client = Groq(api_key=api_key)
         
-        # Ð¦ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»ÑÐ¼ Ð´Ð¸ÐµÑ‚Ñ‹
+        # ГђВ¦ГђВµГђВ»ГђВµГђВІГ‘вЂ№ГђВµ ГђВєГђВ°ГђВ»ГђВѕГ‘в‚¬ГђВёГђВё ГђВїГђВѕ Г‘вЂ ГђВµГђВ»Г‘ВЏГђВј ГђВґГђВёГђВµГ‘вЂљГ‘вЂ№
         self.CALORIE_TARGETS = {
             "weight_loss": {"daily": 1800},
             "muscle_gain": {"daily": 3000},
@@ -40,7 +40,7 @@ class DietAIService:
         }
     
     def get_target_calories(self, goal):
-        """Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ñ†ÐµÐ»ÐµÐ²Ñ‹Ðµ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸ Ð´Ð»Ñ Ñ†ÐµÐ»Ð¸"""
+        """ГђвЂ™ГђВѕГђВ·ГђВІГ‘в‚¬ГђВ°Г‘вЂ°ГђВ°ГђВµГ‘вЂљ Г‘вЂ ГђВµГђВ»ГђВµГђВІГ‘вЂ№ГђВµ ГђВєГђВ°ГђВ»ГђВѕГ‘в‚¬ГђВёГђВё ГђВґГђВ»Г‘ВЏ Г‘вЂ ГђВµГђВ»ГђВё"""
         return self.CALORIE_TARGETS.get(goal, {"daily": 2000})["daily"]
 
     def get_macro_targets(self, goal):
@@ -57,7 +57,7 @@ class DietAIService:
         }
     
     def build_diet_prompt(self, preferences, target_calories, restrictions_text):
-        """Ð¡Ñ‚Ñ€Ð¾Ð¸Ñ‚ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚ Ð´Ð»Ñ Groq API"""
+        """ГђВЎГ‘вЂљГ‘в‚¬ГђВѕГђВёГ‘вЂљ ГђВїГ‘в‚¬ГђВѕГђВјГђВїГ‘вЂљ ГђВґГђВ»Г‘ВЏ Groq API"""
         
         goal = preferences.get("diet_goal", "meal_planning")
         meal_types = preferences.get("meal_preference", [])
@@ -68,16 +68,16 @@ class DietAIService:
         avoid_foods = preferences.get("avoid_foods", [])
         meal_frequency = preferences.get("meal_frequency", "3")
         
-        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ñ‚Ð¸Ð¿Ñ‹ Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ
+        # ГђВ¤ГђВѕГ‘в‚¬ГђВјГђВ°Г‘вЂљГђВёГ‘в‚¬Г‘Ж’ГђВµГђВј Г‘вЂљГђВёГђВїГ‘вЂ№ ГђВїГђВёГ‘вЂљГђВ°ГђВЅГђВёГ‘ВЏ
         meal_type_text = ", ".join(meal_types) if meal_types else "balanced"
         
-        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ ÐºÑƒÑ…Ð½Ð¸
+        # ГђВ¤ГђВѕГ‘в‚¬ГђВјГђВ°Г‘вЂљГђВёГ‘в‚¬Г‘Ж’ГђВµГђВј ГђВєГ‘Ж’Г‘вЂ¦ГђВЅГђВё
         cuisine_text = ", ".join(cuisines) if cuisines else "any cuisine"
         
-        # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ñ‹ Ð´Ð»Ñ Ð¸Ð·Ð±ÐµÐ³Ð°Ð½Ð¸Ñ
+        # ГђВ¤ГђВѕГ‘в‚¬ГђВјГђВ°Г‘вЂљГђВёГ‘в‚¬Г‘Ж’ГђВµГђВј ГђВїГ‘в‚¬ГђВѕГђВґГ‘Ж’ГђВєГ‘вЂљГ‘вЂ№ ГђВґГђВ»Г‘ВЏ ГђВёГђВ·ГђВ±ГђВµГђВіГђВ°ГђВЅГђВёГ‘ВЏ
         avoid_text = ", ".join(avoid_foods) if avoid_foods else "none"
         
-        # ÐžÐ¿Ñ€ÐµÐ´ÐµÐ»ÑÐµÐ¼ Ð¿Ñ€Ð¸Ñ‘Ð¼Ñ‹ Ð¿Ð¸Ñ‰Ð¸
+        # ГђЕѕГђВїГ‘в‚¬ГђВµГђВґГђВµГђВ»Г‘ВЏГђВµГђВј ГђВїГ‘в‚¬ГђВёГ‘вЂГђВјГ‘вЂ№ ГђВїГђВёГ‘вЂ°ГђВё
         meals_per_day = int(meal_frequency)
         meal_names = []
         if meals_per_day == 2:
@@ -94,7 +94,7 @@ class DietAIService:
         weekly_carbs = macro_grams["carbs_g"] * 7
         weekly_fat = macro_grams["fat_g"] * 7
         
-        # Ð¡Ð¿ÐµÑ†Ð¸Ñ„Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾ Ñ†ÐµÐ»Ð¸
+        # ГђВЎГђВїГђВµГ‘вЂ ГђВёГ‘вЂћГђВёГ‘вЂЎГђВЅГ‘вЂ№ГђВµ Г‘в‚¬ГђВµГђВєГђВѕГђВјГђВµГђВЅГђВґГђВ°Г‘вЂ ГђВёГђВё ГђВїГђВѕ Г‘вЂ ГђВµГђВ»ГђВё
         goal_instructions = {
             "weight_loss": "Focus on low-calorie, high-protein meals. Include plenty of vegetables. Avoid sugary and fried foods.",
             "muscle_gain": "Focus on high-protein meals (chicken, fish, eggs, legumes). Include complex carbs (rice, pasta, potatoes).",
@@ -140,30 +140,35 @@ CRITICAL RULES:
 4. Each meal should be realistic and easy to prepare for students
 5. Include variety across the week (don't repeat meals)
 6. Provide accurate calorie and macro estimates
-7. Keep each day close to {target_calories} kcal (±10%)
+7. Keep each day close to {target_calories} kcal (В±10%)
+8. WEEKLY TOTAL must be around {weekly_calories} kcal
+9. Each MEAL should have approximately {target_calories // meals_per_day} kcal
+10. For Muscle Gain - prioritize HIGH PROTEIN sources (chicken, fish, beef, eggs, legumes)
+11. For Weight Loss - prioritize LOW CALORIE, HIGH PROTEIN foods with lots of vegetables
+12. Match the macro percentages: Protein {macro_targets["protein"]}%, Carbs {macro_targets["carbs"]}%, Fat {macro_targets["fat"]}%
 
 Return ONLY valid JSON (no markdown, no backticks, no explanations):
 {{
   "monday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "tuesday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "wednesday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "thursday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "friday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "saturday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }},
   "sunday": {{
-    {self._format_meal_structure(meal_names)}
+    {self._format_meal_structure(meal_names, goal, target_calories)}
   }}
 }}
 
@@ -175,24 +180,54 @@ Each meal must have:
 - "fats": number (grams)"""
 
         return prompt
-    
-    def _format_meal_structure(self, meal_names):
-        """Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñƒ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð¾Ð² Ð¿Ð¸Ñ‰Ð¸ Ð´Ð»Ñ JSON"""
-        examples = {
-            "breakfast": '"breakfast": {"name": "Oatmeal with berries", "calories": 350, "protein": 12, "carbs": 55, "fats": 8}',
-            "lunch": '"lunch": {"name": "Grilled Chicken Salad", "calories": 450, "protein": 35, "carbs": 20, "fats": 15}',
-            "dinner": '"dinner": {"name": "Salmon with Broccoli", "calories": 550, "protein": 40, "carbs": 30, "fats": 20}',
-            "snack": '"snack": {"name": "Greek Yogurt with Nuts", "calories": 200, "protein": 15, "carbs": 12, "fats": 10}'
-        }
-        
-        return ",\n    ".join([examples.get(meal, f'"{meal}": {{"name": "TBD", "calories": 0, "protein": 0, "carbs": 0, "fats": 0}}') for meal in meal_names])
-    
+    def _format_meal_structure(self, meal_names, goal="meal_planning", target_calories=2000):
+        """
+        Форматирует структуру приёмов пищи с примерами под целевые калории и цель.
+        """
+        calories_per_meal = target_calories // len(meal_names)
+
+        if goal == "muscle_gain":
+            examples = {
+                "breakfast": f'"breakfast": {{"name": "Scrambled eggs with whole grain toast and avocado", "calories": {int(calories_per_meal * 0.9)}, "protein": {int(calories_per_meal * 0.3 / 4)}, "carbs": {int(calories_per_meal * 0.45 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "lunch": f'"lunch": {{"name": "Grilled chicken breast with brown rice and vegetables", "calories": {int(calories_per_meal * 1.0)}, "protein": {int(calories_per_meal * 0.3 / 4)}, "carbs": {int(calories_per_meal * 0.45 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "dinner": f'"dinner": {{"name": "Beef steak with sweet potato and broccoli", "calories": {int(calories_per_meal * 1.1)}, "protein": {int(calories_per_meal * 0.3 / 4)}, "carbs": {int(calories_per_meal * 0.45 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "snack": f'"snack": {{"name": "Protein shake with banana and peanut butter", "calories": 400, "protein": 30, "carbs": 45, "fats": 10}}'
+            }
+        elif goal == "weight_loss":
+            examples = {
+                "breakfast": f'"breakfast": {{"name": "Greek yogurt with berries and chia seeds", "calories": {int(calories_per_meal * 0.9)}, "protein": {int(calories_per_meal * 0.35 / 4)}, "carbs": {int(calories_per_meal * 0.4 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "lunch": f'"lunch": {{"name": "Grilled chicken salad with olive oil dressing", "calories": {int(calories_per_meal * 1.0)}, "protein": {int(calories_per_meal * 0.35 / 4)}, "carbs": {int(calories_per_meal * 0.4 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "dinner": f'"dinner": {{"name": "Baked salmon with steamed vegetables", "calories": {int(calories_per_meal * 1.0)}, "protein": {int(calories_per_meal * 0.35 / 4)}, "carbs": {int(calories_per_meal * 0.4 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "snack": f'"snack": {{"name": "Apple slices with almond butter", "calories": 200, "protein": 8, "carbs": 20, "fats": 10}}'
+            }
+        elif goal == "healthy_lifestyle":
+            examples = {
+                "breakfast": f'"breakfast": {{"name": "Oatmeal with nuts and fresh fruit", "calories": {int(calories_per_meal * 0.9)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "lunch": f'"lunch": {{"name": "Turkey sandwich on whole grain with side salad", "calories": {int(calories_per_meal * 1.0)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "dinner": f'"dinner": {{"name": "Chicken stir-fry with quinoa and vegetables", "calories": {int(calories_per_meal * 1.1)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "snack": f'"snack": {{"name": "Mixed nuts and dried fruit", "calories": 250, "protein": 10, "carbs": 25, "fats": 12}}'
+            }
+        else:
+            examples = {
+                "breakfast": f'"breakfast": {{"name": "Scrambled eggs with toast", "calories": {int(calories_per_meal * 0.9)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "lunch": f'"lunch": {{"name": "Pasta with tomato sauce and vegetables", "calories": {int(calories_per_meal * 1.0)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "dinner": f'"dinner": {{"name": "Baked chicken with rice and salad", "calories": {int(calories_per_meal * 1.1)}, "protein": {int(calories_per_meal * 0.25 / 4)}, "carbs": {int(calories_per_meal * 0.5 / 4)}, "fats": {int(calories_per_meal * 0.25 / 9)}}}',
+                "snack": f'"snack": {{"name": "Fruit and yogurt", "calories": 200, "protein": 10, "carbs": 30, "fats": 5}}'
+            }
+
+        return ",\n    ".join([
+            examples.get(
+                meal,
+                f'"{meal}": {{"name": "TBD", "calories": {calories_per_meal}, "protein": 0, "carbs": 0, "fats": 0}}',
+            )
+            for meal in meal_names
+        ])
     def format_restrictions_for_prompt(self, medical_notes):
-        """Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ Ð´Ð»Ñ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚Ð°"""
+        """ГђВ¤ГђВѕГ‘в‚¬ГђВјГђВ°Г‘вЂљГђВёГ‘в‚¬Г‘Ж’ГђВµГ‘вЂљ ГђВјГђВµГђВґГђВёГ‘вЂ ГђВёГђВЅГ‘ВЃГђВєГђВёГђВµ ГђВѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВµГђВЅГђВёГ‘ВЏ ГђВґГђВ»Г‘ВЏ ГђВїГ‘в‚¬ГђВѕГђВјГђВїГ‘вЂљГђВ°"""
         if not medical_notes or medical_notes.strip() == "":
             return "No medical restrictions."
         
-        # ÐŸÐ¾Ð¿Ñ‹Ñ‚ÐºÐ° Ð¸Ð¼Ð¿Ð¾Ñ€Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð±Ð°Ð·Ñƒ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ñ… Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ð¹
+        # ГђЕёГђВѕГђВїГ‘вЂ№Г‘вЂљГђВєГђВ° ГђВёГђВјГђВїГђВѕГ‘в‚¬Г‘вЂљГђВёГ‘в‚¬ГђВѕГђВІГђВ°Г‘вЂљГ‘Е’ ГђВ±ГђВ°ГђВ·Г‘Ж’ ГђВјГђВµГђВґГђВёГ‘вЂ ГђВёГђВЅГ‘ВЃГђВєГђВёГ‘вЂ¦ ГђВѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВµГђВЅГђВёГђВ№
         try:
             from data.medical_restrictions import get_restrictions_for_conditions
             restrictions = get_restrictions_for_conditions(medical_notes)
@@ -201,35 +236,35 @@ Each meal must have:
         except ImportError:
             pass
         
-        # Ð•ÑÐ»Ð¸ Ð±Ð°Ð·Ñ‹ Ð½ÐµÑ‚, Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼ Ñ‚ÐµÐºÑÑ‚
+        # ГђвЂўГ‘ВЃГђВ»ГђВё ГђВ±ГђВ°ГђВ·Г‘вЂ№ ГђВЅГђВµГ‘вЂљ, ГђВїГ‘в‚¬ГђВѕГ‘ВЃГ‘вЂљГђВѕ ГђВІГђВѕГђВ·ГђВІГ‘в‚¬ГђВ°Г‘вЂ°ГђВ°ГђВµГђВј Г‘вЂљГђВµГђВєГ‘ВЃГ‘вЂљ
         return f"User notes: {medical_notes}\nPlease avoid foods that may be harmful for these conditions."
     
-    def generate_weekly_plan(self, user_preferences, medical_notes="", available_ingredients=None):  # âœ… ÐÐžÐ’Ð«Ð™ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€
+    def generate_weekly_plan(self, user_preferences, medical_notes="", available_ingredients=None):  # ГўЕ“вЂ¦ ГђВќГђЕѕГђвЂ™ГђВ«Гђв„ў ГђВїГђВ°Г‘в‚¬ГђВ°ГђВјГђВµГ‘вЂљГ‘в‚¬
         """
-        Ð“ÐµÐ½ÐµÑ€Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð»Ð°Ð½ Ð¿Ð¸Ñ‚Ð°Ð½Ð¸Ñ Ð½Ð° Ð½ÐµÐ´ÐµÐ»ÑŽ Ñ‡ÐµÑ€ÐµÐ· Groq API.
+        ГђвЂњГђВµГђВЅГђВµГ‘в‚¬ГђВёГ‘в‚¬Г‘Ж’ГђВµГ‘вЂљ ГђВїГђВ»ГђВ°ГђВЅ ГђВїГђВёГ‘вЂљГђВ°ГђВЅГђВёГ‘ВЏ ГђВЅГђВ° ГђВЅГђВµГђВґГђВµГђВ»Г‘ЕЅ Г‘вЂЎГђВµГ‘в‚¬ГђВµГђВ· Groq API.
         
         Args:
-            user_preferences (dict): ÐŸÑ€ÐµÐ´Ð¿Ð¾Ñ‡Ñ‚ÐµÐ½Ð¸Ñ Ð¸Ð· diet_preferences
-            medical_notes (str): ÐœÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
+            user_preferences (dict): ГђЕёГ‘в‚¬ГђВµГђВґГђВїГђВѕГ‘вЂЎГ‘вЂљГђВµГђВЅГђВёГ‘ВЏ ГђВёГђВ· diet_preferences
+            medical_notes (str): ГђЕ“ГђВµГђВґГђВёГ‘вЂ ГђВёГђВЅГ‘ВЃГђВєГђВёГђВµ ГђВѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВµГђВЅГђВёГ‘ВЏ
         
         Returns:
-            dict: ÐŸÐ»Ð°Ð½ Ð½Ð° 7 Ð´Ð½ÐµÐ¹ Ð¸Ð»Ð¸ None Ð¿Ñ€Ð¸ Ð¾ÑˆÐ¸Ð±ÐºÐµ
+            dict: ГђЕёГђВ»ГђВ°ГђВЅ ГђВЅГђВ° 7 ГђВґГђВЅГђВµГђВ№ ГђВёГђВ»ГђВё None ГђВїГ‘в‚¬ГђВё ГђВѕГ‘Л†ГђВёГђВ±ГђВєГђВµ
         """
         if not self.client:
             return None
         
         try:
-            # ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ñ†ÐµÐ»ÑŒ Ð¸ ÐºÐ°Ð»Ð¾Ñ€Ð¸Ð¸
+            # ГђЕёГђВѕГђВ»Г‘Ж’Г‘вЂЎГђВ°ГђВµГђВј Г‘вЂ ГђВµГђВ»Г‘Е’ ГђВё ГђВєГђВ°ГђВ»ГђВѕГ‘в‚¬ГђВёГђВё
             goal = user_preferences.get("diet_goal", "meal_planning")
             target_calories = self.get_target_calories(goal)
             
-            # Ð¤Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ Ð¼ÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
+            # ГђВ¤ГђВѕГ‘в‚¬ГђВјГђВ°Г‘вЂљГђВёГ‘в‚¬Г‘Ж’ГђВµГђВј ГђВјГђВµГђВґГђВёГ‘вЂ ГђВёГђВЅГ‘ВЃГђВєГђВёГђВµ ГђВѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВµГђВЅГђВёГ‘ВЏ
             restrictions_text = self.format_restrictions_for_prompt(medical_notes)
             
-            # Ð¡Ñ‚Ñ€Ð¾Ð¸Ð¼ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚
+            # ГђВЎГ‘вЂљГ‘в‚¬ГђВѕГђВёГђВј ГђВїГ‘в‚¬ГђВѕГђВјГђВїГ‘вЂљ
             prompt = self.build_diet_prompt(user_preferences, target_calories, restrictions_text)
             
-            # âœ… ÐÐžÐ’ÐžÐ•: ÐžÐ³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°ÐµÐ¼ AI ÐºÑƒÐ¿Ð»ÐµÐ½Ð½Ñ‹Ð¼Ð¸ Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð°Ð¼Ð¸ Ð¸Ð· Grocery Store
+            # ГўЕ“вЂ¦ ГђВќГђЕѕГђвЂ™ГђЕѕГђвЂў: ГђЕѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВёГђВІГђВ°ГђВµГђВј AI ГђВєГ‘Ж’ГђВїГђВ»ГђВµГђВЅГђВЅГ‘вЂ№ГђВјГђВё ГђВїГ‘в‚¬ГђВѕГђВґГ‘Ж’ГђВєГ‘вЂљГђВ°ГђВјГђВё ГђВёГђВ· Grocery Store
             if available_ingredients:
                 ingredient_list = ", ".join(available_ingredients)
 
@@ -267,7 +302,7 @@ Your task:
             
             print("Sending request to Groq API for meal plan generation...")
             
-            # Ð’Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ Groq API
+            # ГђвЂ™Г‘вЂ№ГђВ·Г‘вЂ№ГђВІГђВ°ГђВµГђВј Groq API
             chat_completion = self.client.chat.completions.create(
                 messages=[
                     {
@@ -280,13 +315,13 @@ Your task:
                     }
                 ],
                 model="llama-3.3-70b-versatile",
-                temperature=0.8,  # Ð’Ñ‹ÑˆÐµ Ð´Ð»Ñ ÐºÑ€ÐµÐ°Ñ‚Ð¸Ð²Ð½Ð¾ÑÑ‚Ð¸
-                max_tokens=2000,  # Ð‘Ð¾Ð»ÑŒÑˆÐµ Ð´Ð»Ñ Ð¿Ð¾Ð»Ð½Ð¾Ð³Ð¾ Ð¿Ð»Ð°Ð½Ð°
+                temperature=0.8,  # ГђвЂ™Г‘вЂ№Г‘Л†ГђВµ ГђВґГђВ»Г‘ВЏ ГђВєГ‘в‚¬ГђВµГђВ°Г‘вЂљГђВёГђВІГђВЅГђВѕГ‘ВЃГ‘вЂљГђВё
+                max_tokens=2000,  # ГђвЂГђВѕГђВ»Г‘Е’Г‘Л†ГђВµ ГђВґГђВ»Г‘ВЏ ГђВїГђВѕГђВ»ГђВЅГђВѕГђВіГђВѕ ГђВїГђВ»ГђВ°ГђВЅГђВ°
             )
             
             response_text = chat_completion.choices[0].message.content.strip()
             
-            # ÐžÑ‡Ð¸Ñ‰Ð°ÐµÐ¼ Ð¾Ñ‚ markdown
+            # ГђЕѕГ‘вЂЎГђВёГ‘вЂ°ГђВ°ГђВµГђВј ГђВѕГ‘вЂљ markdown
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
             if response_text.startswith("```"):
@@ -296,8 +331,8 @@ Your task:
             
             response_text = response_text.strip()
             
-            # ÐŸÐ°Ñ€ÑÐ¸Ð¼ JSON
-            # Parse JSON — may be {"error": true, "reason": "..."} if groceries insufficient
+            # ГђЕёГђВ°Г‘в‚¬Г‘ВЃГђВёГђВј JSON
+            # Parse JSON вЂ” may be {"error": true, "reason": "..."} if groceries insufficient
             parsed = json.loads(response_text)
             if isinstance(parsed, dict) and parsed.get("error"):
                 print(f"[DietAI] Grocery error: {parsed.get('reason')}")
@@ -334,16 +369,16 @@ Your task:
     
     def replace_meal(self, user_preferences, medical_notes, day, meal_type):
         """
-        Ð—Ð°Ð¼ÐµÐ½ÑÐµÑ‚ ÐºÐ¾Ð½ÐºÑ€ÐµÑ‚Ð½Ð¾Ðµ Ð±Ð»ÑŽÐ´Ð¾ Ð½Ð¾Ð²Ñ‹Ð¼.
+        ГђвЂ”ГђВ°ГђВјГђВµГђВЅГ‘ВЏГђВµГ‘вЂљ ГђВєГђВѕГђВЅГђВєГ‘в‚¬ГђВµГ‘вЂљГђВЅГђВѕГђВµ ГђВ±ГђВ»Г‘ЕЅГђВґГђВѕ ГђВЅГђВѕГђВІГ‘вЂ№ГђВј.
         
         Args:
-            user_preferences (dict): ÐŸÑ€ÐµÐ´Ð¿Ð¾Ñ‡Ñ‚ÐµÐ½Ð¸Ñ
-            medical_notes (str): ÐœÐµÐ´Ð¸Ñ†Ð¸Ð½ÑÐºÐ¸Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ñ
-            day (str): Ð”ÐµÐ½ÑŒ Ð½ÐµÐ´ÐµÐ»Ð¸ (monday, tuesday, ...)
-            meal_type (str): Ð¢Ð¸Ð¿ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð° Ð¿Ð¸Ñ‰Ð¸ (breakfast, lunch, dinner)
+            user_preferences (dict): ГђЕёГ‘в‚¬ГђВµГђВґГђВїГђВѕГ‘вЂЎГ‘вЂљГђВµГђВЅГђВёГ‘ВЏ
+            medical_notes (str): ГђЕ“ГђВµГђВґГђВёГ‘вЂ ГђВёГђВЅГ‘ВЃГђВєГђВёГђВµ ГђВѕГђВіГ‘в‚¬ГђВ°ГђВЅГђВёГ‘вЂЎГђВµГђВЅГђВёГ‘ВЏ
+            day (str): ГђвЂќГђВµГђВЅГ‘Е’ ГђВЅГђВµГђВґГђВµГђВ»ГђВё (monday, tuesday, ...)
+            meal_type (str): ГђВўГђВёГђВї ГђВїГ‘в‚¬ГђВёГ‘вЂГђВјГђВ° ГђВїГђВёГ‘вЂ°ГђВё (breakfast, lunch, dinner)
         
         Returns:
-            dict: ÐÐ¾Ð²Ð¾Ðµ Ð±Ð»ÑŽÐ´Ð¾ Ð¸Ð»Ð¸ None
+            dict: ГђВќГђВѕГђВІГђВѕГђВµ ГђВ±ГђВ»Г‘ЕЅГђВґГђВѕ ГђВёГђВ»ГђВё None
         """
         if not self.client:
             return None
@@ -390,13 +425,13 @@ Return ONLY valid JSON (no markdown):
                     {"role": "user", "content": prompt}
                 ],
                 model="llama-3.3-70b-versatile",
-                temperature=0.9,  # Ð’Ñ‹ÑÐ¾ÐºÐ°Ñ ÐºÑ€ÐµÐ°Ñ‚Ð¸Ð²Ð½Ð¾ÑÑ‚ÑŒ
+                temperature=0.9,  # ГђвЂ™Г‘вЂ№Г‘ВЃГђВѕГђВєГђВ°Г‘ВЏ ГђВєГ‘в‚¬ГђВµГђВ°Г‘вЂљГђВёГђВІГђВЅГђВѕГ‘ВЃГ‘вЂљГ‘Е’
                 max_tokens=200,
             )
             
             response_text = chat_completion.choices[0].message.content.strip()
             
-            # ÐžÑ‡Ð¸ÑÑ‚ÐºÐ°
+            # ГђЕѕГ‘вЂЎГђВёГ‘ВЃГ‘вЂљГђВєГђВ°
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
             if response_text.startswith("```"):
@@ -413,3 +448,4 @@ Return ONLY valid JSON (no markdown):
         except Exception as e:
             print(f"Error replacing meal: {e}")
             return None
+

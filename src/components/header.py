@@ -127,6 +127,12 @@ class Header(ft.AppBar):
         
         # Обновляем кнопку и страницу
         self.theme_button.update()
+        if self.on_theme_change:
+            try:
+                self.on_theme_change()
+                return
+            except Exception as ex:
+                print(f"[Header] on_theme_change callback error: {ex}")
         self.page_ref.update()
 
     def show_search(self, e):
@@ -576,5 +582,4 @@ class Header(ft.AppBar):
             actions_alignment=ft.MainAxisAlignment.END,
         )
         self.page_ref.open(dialog)
-
 

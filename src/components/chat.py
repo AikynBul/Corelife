@@ -316,6 +316,35 @@ class ChatWidget(ft.Column):
         input_container = self.chat_window.content.controls[2]
         input_container.border = ft.border.only(top=ft.border.BorderSide(1, ft.Colors.GREY_700 if is_dark else ft.Colors.GREY_300))
 
+    def refresh_theme(self):
+        """Reapply current theme to visible chat UI and simple text bubbles."""
+        self._apply_theme()
+        is_dark = self.page_ref and self.page_ref.theme_mode == ft.ThemeMode.DARK
+
+        for row in self.chat_history.controls:
+            controls = getattr(row, "controls", [])
+            if not controls:
+                continue
+
+            bubble = controls[0]
+            if not isinstance(bubble, ft.Container):
+                continue
+            if not isinstance(bubble.content, ft.Text):
+                continue
+
+            is_user = row.alignment == ft.MainAxisAlignment.END
+            if is_user:
+                bubble.bgcolor = ft.Colors.BLUE_700 if is_dark else ft.Colors.BLUE_100
+                bubble.content.color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
+            else:
+                bubble.bgcolor = ft.Colors.GREY_800 if is_dark else ft.Colors.GREY_200
+                bubble.content.color = ft.Colors.WHITE if is_dark else ft.Colors.GREY_900
+
+        try:
+            self.update()
+        except Exception:
+            pass
+
     def add_message(self, text, is_user=True, update=True):
         is_dark = self.page_ref and self.page_ref.theme_mode == ft.ThemeMode.DARK
         if is_user:
